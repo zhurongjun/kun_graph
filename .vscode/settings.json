@@ -1,4 +1,5 @@
 {
+    // setup c_cpp 
     "C_Cpp.codeAnalysis.runAutomatically": false,
     "C_Cpp.intelliSenseEngine": "Disabled",
     "C_Cpp.formatting": "Disabled",
@@ -6,11 +7,13 @@
     "C_Cpp.autocompleteAddParentheses": false,
     "C_Cpp.autocomplete": "Disabled",
     "C_Cpp.errorSquiggles": "Disabled",
+    // setup clangd 
     "clangd.arguments": [
         "--compile-commands-dir=build",
         "-j=13",
         "--header-insertion=never",
         "--pch-storage=memory",
     ],
-    "editor.accessibilitySupport": "off"
+    // setup editor 
+    "editor.accessibilitySupport": "off",
 }

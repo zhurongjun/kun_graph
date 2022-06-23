@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.16.0)
 
+# setup vcpkg
+if(DEFINED ENV{VCPKG_ROOT})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+    set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")
+    message(STATUS "using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}:${VCPKG_TARGET_TRIPLET}")
+else()
+    message(SEND_ERROR "lost vcpkg toolchain please set 'VCPKG_ROOT' env value")
+endif()
+
+# proj
 project(kun VERSION 0.0.0 LANGUAGES CXX)
 
 # config cpp

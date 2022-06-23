@@ -9,5 +9,5 @@ find_package(spdlog REQUIRED)
 find_package(mimalloc 2.0 REQUIRED)
 
 # link packages
-target_link_libraries(core PUBLIC eastl fmt::fmt-header-only glm mimalloc)
+target_link_libraries(core PUBLIC EASTL fmt::fmt-header-only glm::glm mimalloc)
 target_link_libraries(core PRIVATE spdlog::spdlog)
