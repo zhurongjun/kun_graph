@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16.0)
 
 # setup vcpkg
-if(DEFINED ENV{VCPKG_ROOT})
+if (DEFINED ENV{VCPKG_ROOT})
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
     set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")
     message(STATUS "using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}:${VCPKG_TARGET_TRIPLET}")
-else()
+else ()
     message(SEND_ERROR "lost vcpkg toolchain please set 'VCPKG_ROOT' env value")
-endif()
+endif ()
 
 # proj
 project(kun VERSION 0.0.0 LANGUAGES CXX)
@@ -16,30 +16,37 @@ project(kun VERSION 0.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
 # config cpp in windows
-if(WIN32)
+if (WIN32)
     # shit msvc
     add_compile_definitions(NOMINMAX)
 
+    # enable __cplusplus marco
+    add_definitions(/Zc:__cplusplus)
+
+    # enable exception handling
+    add_definitions(/GX)
+
     # prepare for big object
     # add_compile_options(/bigobj)
-endif()
+endif ()
 
 # force x64
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message("only support x64 build")
     return()
-endif()
+endif ()
 
 # debug level
-if(CMAKE_BUILD_TYPE AND(CMAKE_BUILD_TYPE STREQUAL "Debug"))
+if (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug"))
     add_compile_definitions(KUN_DBG_LEVEL=2)
-elseif(CMAKE_BUILD_TYPE AND(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
+elseif (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
     add_compile_definitions(KUN_DBG_LEVEL=1)
-endif()
+endif ()
 
 # options
 
 # libraries
+include(cmake/global.cmake)
 include(cmake/module.cmake)
 
 # src code

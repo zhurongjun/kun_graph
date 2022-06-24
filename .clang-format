@@ -12,7 +12,7 @@ AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: Always
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: All
-AllowShortIfStatementsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: false
 AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: true
 AllowShortEnumsOnASingleLine: true
@@ -20,7 +20,7 @@ AlwaysBreakAfterReturnType: None
 AlwaysBreakTemplateDeclarations: MultiLine
 Cpp11BracedListStyle: true
 IndentWrappedFunctionNames: false
-BreakBeforeBraces: Custom
+BreakBeforeBraces: Allman
 BraceWrapping:
   AfterCaseLabel: true
   AfterClass: true

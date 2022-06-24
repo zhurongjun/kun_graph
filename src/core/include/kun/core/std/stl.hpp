@@ -9,6 +9,7 @@
 //  - optional              [eastl]
 //  - variant               [eastl]
 //  - name(unique string)   [kstl]
+//  - exception             [kstl]
 //  - hash                  [kstl]
 //  - span                  [kstl]
 //  - any                   [kstl]
@@ -22,3 +23,6 @@
 
 // from kstl
 #include "kstl/span.hpp"
+#include "kstl/hash.hpp"
+#include "kstl/exception.hpp"
+#include "kstl/name.h"

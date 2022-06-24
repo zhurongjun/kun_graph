@@ -2,7 +2,7 @@
 <project version="4">
   <component name="CMakeSharedSettings">
     <configurations>
-      <configuration PROFILE_NAME="RelWithDebInfo" ENABLED="true" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="clang-cl" />
+      <configuration PROFILE_NAME="RelWithDebInfo-clang-cl" ENABLED="true" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="clang-cl" />
     </configurations>
   </component>
 </project>

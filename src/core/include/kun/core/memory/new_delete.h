@@ -16,14 +16,14 @@ enum NewFlag_
 // new & delete
 template<typename T, NewFlag flag = NewFlag_None, typename... TArgs> KUN_INLINE T* New(TArgs&&... args)
 {
-    void* p = malloc(sizeof(T), alignof(T));
+    void* p = memory::malloc(sizeof(T), alignof(T));
     T* p_obj = new (p) T(std::forward<TArgs>(args)...);
     return p_obj;
 }
 template<typename T> inline void Delete(T* o)
 {
     o->~T();
-    free(o);
+    memory::free(o);
 }
 
 }// namespace kun

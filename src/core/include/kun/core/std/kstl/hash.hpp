@@ -49,7 +49,7 @@ KUN_IMPL_HASH_CAST(f32)
 KUN_IMPL_HASH_CAST(f64)
 
 // hash combine
-KUN_INLINE size_t hash_combine(Size seed, Size combine) { return seed ^ (combine + 0x9e3779b9 + (seed << 6) + (seed >> 2)); }
+KUN_INLINE Size hash_combine(Size seed, Size combine) { return seed ^ (combine + 0x9e3779b9 + (seed << 6) + (seed >> 2)); }
 template<typename T> KUN_INLINE void hash_combine(Size& seed, const T& v) { seed = hash_combine(seed, Hash<T>()(v)); }
 }// namespace kun
 

@@ -14,9 +14,9 @@ public:
 
     KUN_INLINE EASTLAllocator& operator=(const EASTLAllocator&) { return *this; }
 
-    KUN_INLINE void* allocate(size_t n, int flags = 0) { return malloc(n); }
-    KUN_INLINE void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0) { return malloc(n, alignment, offset); }
-    KUN_INLINE void deallocate(void* p, size_t n) { free(p); }
+    KUN_INLINE void* allocate(Size n, int flags = 0) { return memory::malloc(n); }
+    KUN_INLINE void* allocate(Size n, Size alignment, Size offset, int flags = 0) { return memory::malloc(n, alignment, offset); }
+    KUN_INLINE void deallocate(void* p, Size n) { memory::free(p); }
 
     KUN_INLINE const char* get_name() const { return ""; }
     KUN_INLINE void set_name(const char*) {}
