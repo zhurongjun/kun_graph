@@ -1,1 +1,1 @@
-#include "kun/core/core.h"
+#include "kun/core/mimimal.h"

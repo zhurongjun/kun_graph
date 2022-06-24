@@ -34,3 +34,6 @@
 # Vscode
 .cache/
 build/
+
+# Clion
+cmake-build-*/

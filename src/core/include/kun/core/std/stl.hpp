@@ -1,0 +1,24 @@
+#pragma once
+
+// custom std for cross-platform/cross-stdlib interface, include
+//  - basic containers      [eastl]
+//  - string/string_view    [eastl]
+//  - function              [eastl]
+//  - tuple/pair            [eastl]
+//  - smart ptr             [eastl]
+//  - optional              [eastl]
+//  - variant               [eastl]
+//  - name(unique string)   [kstl]
+//  - hash                  [kstl]
+//  - span                  [kstl]
+//  - any                   [kstl]
+
+// from eastl
+#include "eastl/eastl_allocator.h"
+#include "eastl/eastl_config.hpp"
+#include "eastl/eastl_container.hpp"
+#include "eastl/eastl_smart_ptr.hpp"
+#include "eastl/eastl_optional.hpp"
+
+// from kstl
+#include "kstl/span.hpp"

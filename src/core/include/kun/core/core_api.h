@@ -1,8 +1,8 @@
 #pragma once
-#include <eastl/algorithm.h>
+#include "kun/core/config.h"
 
 #if EXPORT_CORE
-#define CORE_API __declspec(dllexport)
+    #define KUN_CORE_API KUN_DLLEXPORT
 #else
-#define CORE_API __declspec(dllimport)
+    #define KUN_CORE_API KUN_DLLIMPORT
 #endif

@@ -30,6 +30,13 @@ if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     return()
 endif()
 
+# debug level
+if(CMAKE_BUILD_TYPE AND(CMAKE_BUILD_TYPE STREQUAL "Debug"))
+    add_compile_definitions(KUN_DBG_LEVEL=2)
+elseif(CMAKE_BUILD_TYPE AND(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
+    add_compile_definitions(KUN_DBG_LEVEL=1)
+endif()
+
 # options
 
 # libraries

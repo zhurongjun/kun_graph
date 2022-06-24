@@ -12,5 +12,5 @@ find_package(mimalloc 2.0 REQUIRED)
 target_compile_definitions(core PUBLIC GLM_SWIZZLE)
 
 # link packages
-target_link_libraries(core PUBLIC EASTL fmt::fmt-header-only glm::glm mimalloc)
-target_link_libraries(core PRIVATE spdlog::spdlog)
+target_link_libraries(core PUBLIC EASTL fmt::fmt-header-only glm::glm)
+target_link_libraries(core PRIVATE spdlog::spdlog mimalloc)
