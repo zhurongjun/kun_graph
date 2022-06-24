@@ -8,8 +8,8 @@ function(kun_add_module module_name)
     # add target
     add_library(${module_name} SHARED ${SRC_FILES})
 
-    # include dir
-    target_include_directories(${module_name} PUBLIC ./include)
+    # add include
+    target_include_directories(${module_name} PUBLIC include/)
 
     # add export def
     target_compile_definitions(${module_name} PRIVATE "EXPORT_${upper_module_name}")

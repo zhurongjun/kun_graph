@@ -4,6 +4,7 @@ AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: None
 AlignOperands: Align
+BreakConstructorInitializers: BeforeComma
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 AllowAllArgumentsOnNextLine: true
 AllowAllConstructorInitializersOnNextLine: true
@@ -17,27 +18,27 @@ AllowShortLoopsOnASingleLine: true
 AllowShortEnumsOnASingleLine: true
 AlwaysBreakAfterReturnType: None
 AlwaysBreakTemplateDeclarations: MultiLine
-BreakBeforeBraces: Attach
 Cpp11BracedListStyle: true
 IndentWrappedFunctionNames: false
+BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterCaseLabel: false
-  AfterClass: false
-  AfterControlStatement: Never
-  AfterEnum: false
-  AfterFunction: false
-  AfterNamespace: false
-  AfterUnion: false
-  BeforeCatch: false
-  BeforeElse: false
-  BeforeLambdaBody: false
-  IndentBraces: false
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: true
+  IndentBraces: true
   SplitEmptyFunction: false
   SplitEmptyRecord: true
   SplitEmptyNamespace: false
   AfterObjCDeclaration: false
-  AfterExternBlock: false
-  AfterStruct: false
+  AfterExternBlock: true
+  AfterStruct: true
 BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: false
 BreakBeforeConceptDeclarations: true
