@@ -1,6 +1,7 @@
 #include <iostream>
 #include <kun/core/mimimal.h>
 #include <kun/core/archive.h>
+#include <kun/core/type_system.h>
 
 int main()
 {
