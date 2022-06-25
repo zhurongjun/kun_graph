@@ -15,19 +15,16 @@ public:
 class StrException : public Exception
 {
 public:
-    StrException()
+    KUN_INLINE StrException()
         : m_str("unknown exception")
     {
     }
-    explicit StrException(StringView str)
+    KUN_INLINE explicit StrException(StringView str)
         : m_str(str)
     {
     }
 
-    StringView what() override
-    {
-        return m_str;
-    }
+    StringView what() override { return m_str; }
 
 private:
     String m_str;

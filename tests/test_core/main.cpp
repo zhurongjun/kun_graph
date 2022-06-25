@@ -1,5 +1,6 @@
 #include <iostream>
 #include <kun/core/mimimal.h>
+#include <kun/core/archive.h>
 
 int main()
 {

@@ -45,14 +45,8 @@ template<typename X, typename Y = X> inline constexpr bool has_not_equal_v = is_
 namespace detail
 {
 template<typename T> using has_default_ctor = decltype(new T());
-template<typename T> using has_init = decltype(std::declval<T>().init());
-template<typename T> using has_shutdown = decltype(std::declval<T>().shutdown());
-template<typename T> using has_dtor = decltype(std::declval<T>().~T());
 }// namespace detail
 template<typename T> inline constexpr bool has_default_ctor_v = is_detected_v<detail::has_default_ctor, T>;
-template<typename T> inline constexpr bool has_init_v = is_detected_v<detail::has_init, T>;
-template<typename T> inline constexpr bool has_shutdown_v = is_detected_v<detail::has_shutdown, T>;
-template<typename T> inline constexpr bool has_dtor_v = is_detected_v<detail::has_dtor, T>;
 
 // copy & move & assign
 namespace detail
