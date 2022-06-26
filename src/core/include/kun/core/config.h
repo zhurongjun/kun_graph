@@ -1,5 +1,5 @@
 #pragma once
-// !!!! nerver include any header here !!!!
+// !!!! never include any header here !!!!
 
 // platform def
 #define KUN_PLATFORM_WINDOWS 0
@@ -70,14 +70,13 @@
 #endif
 
 // debug level
-// we use debug marco mark fault error
+// we use debug marco mark fatal error
 // for Assert, we must never leave it to release version, Assert() will be hit when developer make some stupid mistakes
 // for Verify, we should take care and try our best to fix it before release, but we still can find them in log for debug
 // for some problems that can resume or not enough to cause program crash, we use cpp exception to handle it
 //         |       KUN_Verify        |  KUN_Assert
 // level 0 |       log error         |    none
 // level 1 | debug break & log error |    abort
-// level 2 |          abort          |    abort
 #ifndef KUN_DBG_LEVEL
     #define KUN_DBG_LEVEL 0
 #endif

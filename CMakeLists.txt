@@ -38,7 +38,7 @@ endif ()
 
 # debug level
 if (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug"))
-    add_compile_definitions(KUN_DBG_LEVEL=2)
+    add_compile_definitions(KUN_DBG_LEVEL=1)
 elseif (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
     add_compile_definitions(KUN_DBG_LEVEL=1)
 endif ()

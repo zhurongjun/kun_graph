@@ -5,6 +5,7 @@
 //      - align, size, raw_category: 基础的内存描述, 以及一个粗略的类型来标识
 //      - custom_cate: 为其他系统提供自定义的大类cate
 //      - func table: 基础功能描述, ctor/dtor, 二段式构造, 比较, 四则运算, copy/move, 序列化
+//      - is trivial: 能否直接memcpy, 供容器使用
 // 对于容器/Object, 我们提供继承的实现, 对于万一有custom类型的需求, 我们提供的custom_id可以作为转换的检测
 // 应用场景
 //      - any(blackboard/port): 主要用作为类型标识

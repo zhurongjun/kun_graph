@@ -22,6 +22,7 @@
 #include "eastl/eastl_optional.hpp"
 
 // from kstl
+#include "kstl/basic.hpp"
 #include "kstl/span.hpp"
 #include "kstl/hash.hpp"
 #include "kstl/exception.hpp"

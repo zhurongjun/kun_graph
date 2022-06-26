@@ -3,6 +3,9 @@
 // config
 #include "config.h"
 
+// assert
+#include "assert.hpp"
+
 // memory
 #include "memory/memory.h"
 #include "memory/new_delete.h"
