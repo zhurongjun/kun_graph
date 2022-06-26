@@ -51,8 +51,8 @@ template<typename T> inline constexpr bool has_default_ctor_v = is_detected_v<de
 // copy & move & assign
 namespace detail
 {
-template<typename X, typename Y = X> using has_assign = decltype(std::declval<X>().operator=(std::declval<const Y&>()));
-template<typename X, typename Y = X> using has_move_assign = decltype(std::declval<X>().operator=(std::move(std::declval<Y&&>())));
+template<typename X, typename Y = X> using has_assign = decltype(std::declval<X&>() = (std::declval<const Y&>()));
+template<typename X, typename Y = X> using has_move_assign = decltype(std::declval<X&>() = (std::move(std::declval<Y&&>())));
 template<typename X, typename Y = X> using has_copy_ctor = decltype(new X(std::declval<const Y&>()));
 template<typename X, typename Y = X> using has_move_ctor = decltype(new X(std::declval<Y&&>()));
 }// namespace detail
@@ -66,7 +66,7 @@ template<typename T> struct Hash;
 namespace detail
 {
 template<typename T> using is_swapable = decltype(std::swap(std::declval<T>(), std::declval<T>()));
-template<typename T> using is_hashable = decltype(std::declval<Hash<T>>()(std::declval<T>()));
+template<typename T> using is_hashable = decltype(std::declval<Hash<T>>().operator()(std::declval<T&>()));
 }// namespace detail
 template<typename T> inline constexpr bool is_swapable_v = is_detected_v<detail::is_swapable, T>;
 template<typename T> inline constexpr bool is_hashable_v = is_detected_v<detail::is_hashable, T>;

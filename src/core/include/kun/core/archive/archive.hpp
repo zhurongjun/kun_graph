@@ -131,7 +131,7 @@ template<typename T> KUN_INLINE std::enable_if_t<has_serialize_member_v<T>> seri
 template<typename T> KUN_INLINE std::enable_if_t<has_serialize_v<T>, Archive&> operator&(Archive& ar, NamedValue<T> v)
 {
     RAII raii_scope(ArchiveStructure(ar, v.name));
-    ::serialize(v.value, ar);
+    ::kun::serialize(v.value, ar);
     return ar;
 }
 

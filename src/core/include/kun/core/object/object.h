@@ -4,6 +4,7 @@
 #include "kun/core/type_system/cast.h"
 #include "kun/core/functional/flag_tools.hpp"
 #include "kun/core/std/kstl/name.h"
+#include "kun/core/functional/raii.hpp"
 
 // object def
 // life circle
@@ -44,7 +45,7 @@ class KUN_CORE_API Object
 {
 public:
     Object();
-    virtual ~Object() = default;
+    virtual ~Object();
 
     // init & shutdown
     void init();
@@ -75,14 +76,14 @@ public:
     bool isParentOf(const Object* child) const noexcept;
 
     // object name
-    virtual Name name() { return {}; }
-    virtual void rename(Name name) {}
+    virtual Name name();
+    virtual void rename(Name name);
 
 protected:
     // !!!!!Begin Object API
-    virtual void onInit() {}
-    virtual void onShutdown() {}
-    virtual void onSerialize(Archive& ar) {}
+    virtual void onInit();
+    virtual void onShutdown();
+    virtual void onSerialize(Archive& ar);
     // !!!!!End Object API
 
 private:

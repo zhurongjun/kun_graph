@@ -24,7 +24,7 @@
 namespace kun
 {
 // hash structure
-template<typename T> struct Hash : std::enable_if_t<std::is_enum_v<T>, T>
+template<typename T> struct Hash
 {
 };
 
