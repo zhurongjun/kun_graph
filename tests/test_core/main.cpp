@@ -3,6 +3,7 @@
 #include <kun/core/archive.h>
 #include <kun/core/type_system.h>
 #include <kun/core/math.h>
+#include <kun/core/algo.hpp>
 #include <glm/vec2.hpp>
 
 void print_func_table_exist(const kun::TypeFuncTable& table)
@@ -41,6 +42,13 @@ int main()
         KUN_Verify(vals[i] == 500 + i);
         KUN_Verify(vals[500 + i] == i);
     }
+    for (int i = 0; i < 1000; ++i) { vals[i] = i * 2 + 1; }
+
+    auto lower = kun::algo::lowerBound(vals, vals + 1000, 1001);
+    auto upper = kun::algo::upperBound(vals, vals + 1000, 1001);
+    auto found = kun::algo::binarySearch(vals, vals + 1000, 1001);
+
+    std::cout << "lower: " << *lower << std::endl << "upper: " << *upper << std::endl << "found: " << (found != nullptr) << std::endl;
 
     return 0;
 }
