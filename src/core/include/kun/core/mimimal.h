@@ -8,6 +8,7 @@
 #include "functional/assert.hpp"
 
 // memory
+#include "memory/copy_move_policy.hpp"
 #include "memory/memory.h"
 #include "memory/new_delete.h"
 

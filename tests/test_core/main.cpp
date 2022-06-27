@@ -3,6 +3,7 @@
 #include <kun/core/archive.h>
 #include <kun/core/type_system.h>
 #include <kun/core/math.h>
+#include <glm/vec2.hpp>
 
 void print_func_table_exist(const kun::TypeFuncTable& table)
 {
@@ -25,11 +26,14 @@ void print_func_table_exist(const kun::TypeFuncTable& table)
 
 int main()
 {
+    // test func table
     kun::TypeFuncTable table;
-    kun::makeTypeFuncTable<kun::Object>(table);
+    kun::makeTypeFuncTable<int>(table);
+    std::cout << "Object func table: " << std::endl;
+    print_func_table_exist(table);
 
+    // test memswap
     kun::i32 vals[1000];
-
     for (int i = 0; i < 1000; ++i) { vals[i] = i; }
     kun::memory::memswap(vals, vals + 500, sizeof(kun::i32) * 500);
     for (int i = 0; i < 500; ++i)
@@ -37,9 +41,6 @@ int main()
         KUN_Verify(vals[i] == 500 + i);
         KUN_Verify(vals[500 + i] == i);
     }
-
-    std::cout << "Object func table: " << std::endl;
-    print_func_table_exist(table);
 
     return 0;
 }

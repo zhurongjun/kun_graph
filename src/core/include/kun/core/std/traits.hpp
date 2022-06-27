@@ -61,14 +61,4 @@ template<typename X, typename Y = X> inline constexpr bool has_move_assign_v = i
 template<typename X, typename Y = X> inline constexpr bool has_copy_ctor_v = is_detected_v<detail::has_copy_ctor, X, Y>;
 template<typename X, typename Y = X> inline constexpr bool has_move_ctor_v = is_detected_v<detail::has_move_ctor, X, Y>;
 
-// swap & hash
-template<typename T> struct Hash;
-namespace detail
-{
-template<typename T> using is_swapable = decltype(std::swap(std::declval<T>(), std::declval<T>()));
-template<typename T> using is_hashable = decltype(std::declval<Hash<T>>().operator()(std::declval<T&>()));
-}// namespace detail
-template<typename T> inline constexpr bool is_swapable_v = is_detected_v<detail::is_swapable, T>;
-template<typename T> inline constexpr bool is_hashable_v = is_detected_v<detail::is_hashable, T>;
-
 }// namespace kun

@@ -51,6 +51,13 @@ KUN_IMPL_HASH_CAST(f64)
 // hash combine
 KUN_INLINE Size hash_combine(Size seed, Size combine) { return seed ^ (combine + 0x9e3779b9 + (seed << 6) + (seed >> 2)); }
 template<typename T> KUN_INLINE void hash_combine(Size& seed, const T& v) { seed = hash_combine(seed, Hash<T>()(v)); }
+
+// is_hashable
+namespace detail
+{
+template<typename T> using is_hashable = decltype(std::declval<Hash<T>>().operator()(std::declval<T&>()));
+}// namespace detail
+template<typename T> inline constexpr bool is_hashable_v = is_detected_v<detail::is_hashable, T>;
 }// namespace kun
 
 #undef KUN_IMPL_HASH_CAST
