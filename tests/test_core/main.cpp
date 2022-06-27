@@ -27,6 +27,9 @@ int main()
     kun::TypeFuncTable table;
     kun::makeTypeFuncTable<kun::Object>(table);
 
+    KUN_Assert(false);
+    KUN_Assertf(false, "shit {}", 100);
+
     std::cout << "Object func table: " << std::endl;
     print_func_table_exist(table);
 

@@ -41,17 +41,17 @@ struct formatter<kun::StringView, kun::StringView::value_type>
 // global format function
 namespace kun
 {
-template<typename... Ts> KUN_INLINE String format(fmt::format_string<Ts...> fmt, Ts&&... args)
+template<typename... Ts> KUN_INLINE String format(::fmt::format_string<Ts...> fmt, Ts&&... args)
 {
     String str;
-    fmt::vformat_to(std::back_inserter(str), fmt, fmt::make_format_args(args...));
+    ::fmt::vformat_to(std::back_inserter(str), fmt, ::fmt::make_format_args(std::forward<Ts>(args)...));
     return str;
 }
 
 template<typename... Ts> KUN_INLINE String format_s(StringView fmt, Ts&&... args)
 {
     String str;
-    fmt::vformat_to(std::back_inserter(str), std::string_view(fmt.data(), fmt.length()), fmt::make_format_args(args...));
+    ::fmt::vformat_to(std::back_inserter(str), std::string_view(fmt.data(), fmt.length()), ::fmt::make_format_args(std::forward<Ts>(args)...));
     return str;
 }
 }// namespace kun

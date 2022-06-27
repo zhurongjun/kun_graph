@@ -3,8 +3,9 @@
 // config
 #include "config.h"
 
-// assert
-#include "assert.hpp"
+// log & assert
+#include "functional/log.h"
+#include "functional/assert.hpp"
 
 // memory
 #include "memory/memory.h"
