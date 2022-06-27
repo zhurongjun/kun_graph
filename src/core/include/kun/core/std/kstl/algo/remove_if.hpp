@@ -34,4 +34,39 @@ template<typename T, typename TP> T removeIf(T begin, T end, TP&& p = TP())
     }
     return begin;
 }
+template<typename T, typename TP> T removeIfStable(T begin, T end, TP&& p = TP())
+{
+    auto write = begin;
+
+    // skip head
+    while (write < end)
+    {
+        if (p(*write))
+        {
+            break;
+        }
+
+        ++write;
+    }
+
+    // read ptr
+    auto read = write;
+    ++read;
+
+    // add item from read ptr to write ptr
+    while (read < end)
+    {
+        // move
+        if (!p(*read))
+        {
+            *write = std::move(*read);
+            ++write;
+        }
+
+        ++read;
+    }
+
+    return write;
+}
+
 }// namespace kun::algo
