@@ -5,24 +5,24 @@
 namespace kun::algo
 {
 template<typename T, typename TF, typename TM = MapFwd, typename TP = Equal<>>
-KUN_INLINE T find(T* begin, T* end, const TF& v, TM&& m = TM(), TP&& p = TP())
+KUN_INLINE T find(T begin, T end, const TF& v, TM&& m = TM(), TP&& p = TP())
 {
     for (; begin != end; ++begin)
     {
         if (p(m(*begin) == v))
             return begin;
     }
-    return nullptr;
+    return end;
 }
 
 template<typename T, typename TF, typename TM = MapFwd, typename TP = Equal<>>
-KUN_INLINE T findLast(T* begin, T* end, const TF& v, TM&& m = TM(), TP&& p = TP())
+KUN_INLINE T findLast(T begin, T end, const TF& v, TM&& m = TM(), TP&& p = TP())
 {
     for (; begin != end; --end)
     {
         if (p(m(*end) == v))
             return end;
     }
-    return nullptr;
+    return end;
 }
 }// namespace kun::algo

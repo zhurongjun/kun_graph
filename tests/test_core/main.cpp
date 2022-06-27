@@ -37,18 +37,11 @@ int main()
     kun::i32 vals[1000];
     for (int i = 0; i < 1000; ++i) { vals[i] = i; }
     kun::memory::memswap(vals, vals + 500, sizeof(kun::i32) * 500);
-    for (int i = 0; i < 500; ++i)
+    for (int n = 0; n < 500; ++n)
     {
-        KUN_Verify(vals[i] == 500 + i);
-        KUN_Verify(vals[500 + i] == i);
+        KUN_Verifyf(vals[n] == 500 + n, "n = {}", n);
+        KUN_Verifyf(vals[500 + n] == n, "n = {}", n);
     }
-    for (int i = 0; i < 1000; ++i) { vals[i] = i * 2 + 1; }
-
-    auto lower = kun::algo::lowerBound(vals, vals + 1000, 1001);
-    auto upper = kun::algo::upperBound(vals, vals + 1000, 1001);
-    auto found = kun::algo::binarySearch(vals, vals + 1000, 1001);
-
-    std::cout << "lower: " << *lower << std::endl << "upper: " << *upper << std::endl << "found: " << (found != nullptr) << std::endl;
 
     return 0;
 }
