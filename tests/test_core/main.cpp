@@ -28,6 +28,16 @@ int main()
     kun::TypeFuncTable table;
     kun::makeTypeFuncTable<kun::Object>(table);
 
+    kun::i32 vals[1000];
+
+    for (int i = 0; i < 1000; ++i) { vals[i] = i; }
+    kun::memory::memswap(vals, vals + 500, sizeof(kun::i32) * 500);
+    for (int i = 0; i < 500; ++i)
+    {
+        KUN_Verify(vals[i] == 500 + i);
+        KUN_Verify(vals[500 + i] == i);
+    }
+
     std::cout << "Object func table: " << std::endl;
     print_func_table_exist(table);
 
