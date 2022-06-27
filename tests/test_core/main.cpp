@@ -2,6 +2,7 @@
 #include <kun/core/mimimal.h>
 #include <kun/core/archive.h>
 #include <kun/core/type_system.h>
+#include <kun/core/math.h>
 
 void print_func_table_exist(const kun::TypeFuncTable& table)
 {
@@ -26,9 +27,6 @@ int main()
 {
     kun::TypeFuncTable table;
     kun::makeTypeFuncTable<kun::Object>(table);
-
-    KUN_Assert(false);
-    KUN_Assertf(false, "shit {}", 100);
 
     std::cout << "Object func table: " << std::endl;
     print_func_table_exist(table);

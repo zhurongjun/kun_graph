@@ -1,6 +1,7 @@
 #pragma once
 #include "kun/core/config.h"
 #include "kun/core/core_api.h"
+#include "log.h"
 #include "debugbreak.h"
 #include <cstdlib>
 #include <iostream>
