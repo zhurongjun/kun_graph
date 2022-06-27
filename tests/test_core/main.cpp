@@ -33,15 +33,11 @@ int main()
     std::cout << "Object func table: " << std::endl;
     print_func_table_exist(table);
 
-    // test memswap
-    kun::i32 vals[1000];
-    for (int i = 0; i < 1000; ++i) { vals[i] = i; }
-    kun::memory::memswap(vals, vals + 500, sizeof(kun::i32) * 500);
-    for (int n = 0; n < 500; ++n)
-    {
-        KUN_Verifyf(vals[n] == 500 + n, "n = {}", n);
-        KUN_Verifyf(vals[500 + n] == n, "n = {}", n);
-    }
+    // test sort
+    kun::u32 val_arr[1000];
+    for (kun::u32 i = 0; i < 1000; ++i) { val_arr[i] = 999 - i; }
+    kun::algo::mergeSort(val_arr, val_arr + 1000);
+    KUN_Verify(kun::algo::isSorted(val_arr, val_arr + 1000));
 
     return 0;
 }

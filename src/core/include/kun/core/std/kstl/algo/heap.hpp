@@ -13,7 +13,7 @@ template<typename T> KUN_INLINE constexpr T heapParentIdx(T index) { return inde
 template<typename T> KUN_INLINE constexpr bool heapIsLeaf(T index, T count) { return heapLChildIdx(index) >= count; }
 
 // sift down
-template<typename T, typename TS, typename TP = Less<T>> KUN_INLINE void heapSiftDown(T* heap, TS idx, TS count, TP&& p = TP())
+template<typename T, typename TS, typename TP = Less<>> KUN_INLINE void heapSiftDown(T heap, TS idx, TS count, TP&& p = TP())
 {
     while (!heapIsLeaf(idx, count))
     {
@@ -24,30 +24,30 @@ template<typename T, typename TS, typename TP = Less<T>> KUN_INLINE void heapSif
         TS min_child_idx = l_child_idx;
         if (r_child_idx < count)
         {
-            min_child_idx = p(heap[l_child_idx], heap[r_child_idx]) ? l_child_idx : r_child_idx;
+            min_child_idx = p(*(heap + l_child_idx), *(heap + r_child_idx)) ? l_child_idx : r_child_idx;
         }
 
         // now element is on his location
-        if (!p(heap[min_child_idx], heap[idx]))
+        if (!p(*(heap + min_child_idx), *(heap + idx)))
             break;
 
-        ::kun::swap(heap[idx], heap[min_child_idx]);
+        ::kun::swap(*(heap + idx), *(heap + min_child_idx));
         idx = min_child_idx;
     }
 }
 
 // sift up
-template<class T, typename TS, class TP = Less<T>> KUN_INLINE TS heapSiftUp(T* heap, TS root_idx, TS node_idx, TP&& p = TP())
+template<class T, typename TS, class TP = Less<>> KUN_INLINE TS heapSiftUp(T* heap, TS root_idx, TS node_idx, TP&& p = TP())
 {
     while (node_idx > root_idx)
     {
         TS parent_idx = heapParentIdx(node_idx);
 
         // now element is on his location
-        if (!p(heap[node_idx], heap[parent_idx]))
+        if (!p(*(heap + node_idx), *(heap + parent_idx)))
             break;
 
-        ::kun::swap(heap[node_idx], heap[parent_idx]);
+        ::kun::swap(*(heap + node_idx), *(heap + parent_idx));
         node_idx = parent_idx;
     }
 
@@ -55,18 +55,18 @@ template<class T, typename TS, class TP = Less<T>> KUN_INLINE TS heapSiftUp(T* h
 }
 
 // is heap
-template<typename T, typename TS, typename TP = Less<T>> bool isHeap(T* heap, TS count, TP&& p = TP())
+template<typename T, typename TS, typename TP = Less<>> bool isHeap(T* heap, TS count, TP&& p = TP())
 {
     for (TS i = 1; i < count; ++i)
     {
-        if (p(heap[i], heap[heapParentIdx(i)]))
+        if (p(*(heap + i), *(heap + heapParentIdx(i))))
             return false;
     }
     return true;
 }
 
 // heapify
-template<typename T, typename TS, typename TP = Less<T>> KUN_INLINE void heapify(T* heap, TS count, TP&& p = TP())
+template<typename T, typename TS, typename TP = Less<>> KUN_INLINE void heapify(T* heap, TS count, TP&& p = TP())
 {
     if (count > 1)
     {
@@ -82,17 +82,17 @@ template<typename T, typename TS, typename TP = Less<T>> KUN_INLINE void heapify
 }
 
 // heap sort
-template<typename T, typename TS, class TP = Less<T>> void HeapSort(T* heap, TS count, TP&& p = TP())
+template<typename T, typename TS, class TP = Less<>> void heapSort(T heap, TS count, TP&& p = TP())
 {
-    auto reverse_pred = [&](const T& a, const T& b) -> bool { return !p(a, b); };
+    auto reverse_pred = [&](const auto& a, const auto& b) -> bool { return !p(a, b); };
 
     // use reverse_pred heapify, and pop head swap to tail
     heapify(heap, count, reverse_pred);
 
     for (TS cur_count = count - 1; cur_count > 0; --cur_count)
     {
-        ::kun::swap(heap[0], heap[cur_count]);
-        heapSiftDown(heap, 0, cur_count, reverse_pred);
+        ::kun::swap(*heap, *(heap + cur_count));
+        heapSiftDown(heap, (TS)0, cur_count, reverse_pred);
     }
 }
 }// namespace kun::algo
