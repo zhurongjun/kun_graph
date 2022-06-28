@@ -15,7 +15,7 @@ template<class T, class TP> void merge(T begin, T mid, T end, TP&& p)
     while (l_start < r_start && r_start < end)
     {
         // find insert location for first element of right part head in left part
-        T new_l_start = upperBound(l_start, r_start, *r_start, MapFwd(), std::forward<TP>(p));
+        T new_l_start = upperBound(l_start, r_start, *r_start, std::forward<TP>(p));
         l_start = new_l_start;
 
         // check done
@@ -30,7 +30,7 @@ template<class T, class TP> void merge(T begin, T mid, T end, TP&& p)
         // step.1 update left part, all '.' is less than any  ','                                |....LLLLLL|,,,,,,,,,|
         // step.2 update right part, all 'R' is less than any 'L'                                |....LLLLLL|RRRRR,,,,|
         // step.3 rotate, new bound is after 'R', because any 'R' is less than 'L' and ','       |....RRRRR|LLLLLL,,,,|
-        T new_r_start = lowerBound(r_start, end, *l_start, MapFwd(), std::forward<TP>(p));
+        T new_r_start = lowerBound(r_start, end, *l_start, std::forward<TP>(p));
         Size r_offset = new_r_start - r_start;
 
         // rotate mid part

@@ -3,53 +3,6 @@
 #include "kun/core/std/types.hpp"
 #include "kun/core/std/traits.hpp"
 
-// map functors
-namespace kun
-{
-struct MapFwd
-{
-    template<typename T> KUN_INLINE constexpr decltype(auto) operator()(T&& v) const { return std::forward<T>(v); }
-};
-struct MapDeref
-{
-    template<typename T> KUN_INLINE constexpr auto& operator()(T&& b) const
-    {
-        if constexpr (std::is_pointer_v<T>)
-            return *b;
-        else
-            return b;
-    }
-};
-struct MapKey
-{
-    template<typename T> KUN_INLINE constexpr auto& operator()(T&& v) const { return v.key; }
-};
-struct MapValue
-{
-    template<typename T> KUN_INLINE constexpr auto& operator()(T&& v) const { return v.value; }
-};
-struct MapKeyDeref
-{
-    template<typename T> KUN_INLINE constexpr auto& operator()(T&& v) const
-    {
-        if constexpr (std::is_pointer_v<decltype(v.key)>)
-            return *v.key;
-        else
-            return v.key;
-    }
-};
-struct MapValueDeref
-{
-    template<typename T> KUN_INLINE constexpr auto& operator()(T&& v) const
-    {
-        if constexpr (std::is_pointer_v<decltype(v.value)>)
-            return *v.value;
-        else
-            return v.value;
-    }
-};
-}// namespace kun
-
 // compare functors
 namespace kun
 {
