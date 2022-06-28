@@ -3,98 +3,8 @@
 #include "kun/core/std/types.hpp"
 #include "kun/core/std/kstl/algo/bit_array.hpp"
 #include "kun/core/memory/memory.h"
+#include "bit_iterator.hpp"
 #include "fwd.hpp"
-
-// bit ref
-namespace kun
-{
-class BitRef
-{
-public:
-    KUN_INLINE BitRef(u32& data, u32 mask)
-        : m_data(data)
-        , m_mask(mask)
-    {
-    }
-    KUN_INLINE         operator bool() const { return (m_data & m_mask); }
-    KUN_INLINE BitRef& operator=(bool v)
-    {
-        m_data = v ? m_data | m_mask : m_data & ~m_mask;
-        return *this;
-    }
-    KUN_INLINE BitRef& operator=(const BitRef& rhs)
-    {
-        *this = (bool)rhs;
-        return *this;
-    }
-
-private:
-    u32& m_data;
-    u32  m_mask;
-};
-}// namespace kun
-
-// bit iterator
-namespace kun
-{
-template<typename TS, bool Const> class BitIt
-{
-    using DataPtr = std::conditional_t<Const, const u32*, u32*>;
-    using Ref = std::conditional_t<Const, bool, BitRef>;
-    KUN_INLINE BitIt(DataPtr data, TS size, TS start = 0)
-        : m_data(data)
-        , m_size(size)
-        , m_bit_index(start)
-        , m_DWORD_index(start >> algo::NumBitsPerDWORDLogTwo)
-        , m_mask(1 << (start & algo::PerDWORDMask))
-    {
-    }
-    template<typename TAlloc>
-    KUN_INLINE explicit BitIt(BitArray<TAlloc>& arr, TS start = 0)
-        : BitIt(arr.data(), arr.size(), start)
-    {
-    }
-
-    KUN_INLINE BitIt& operator++()
-    {
-        ++m_bit_index;
-        m_mask <<= 1;
-
-        // advance to the next uint32.
-        if (!m_mask)
-        {
-            m_mask = 1;
-            ++m_DWORD_index;
-        }
-        return *this;
-    }
-    KUN_INLINE explicit operator bool() const { return m_bit_index < m_size; }
-    KUN_INLINE bool     operator!() const { return !(bool)*this; }
-    KUN_INLINE bool     operator==(const BitIt& rhs) const { return m_data == rhs.m_data && m_bit_index == rhs.m_bit_index; }
-    KUN_INLINE bool     operator!=(const BitIt& rhs) const { return !(*this == rhs); }
-    KUN_INLINE Ref      operator*() const { return value(); }
-
-    KUN_INLINE Ref value() const
-    {
-        if constexpr (Const)
-        {
-            return m_data[m_DWORD_index] & m_mask;
-        }
-        else
-        {
-            return Ref(m_data[m_DWORD_index], m_mask);
-        }
-    }
-    KUN_INLINE TS index() const { return m_bit_index; }
-
-private:
-    DataPtr* m_data;       // data ptr
-    TS       m_size;       // data size(in bit)
-    TS       m_bit_index;  // current bit index
-    TS       m_DWORD_index;// current DWORD index
-    u32      m_mask;       // current bit mask
-};
-}// namespace kun
 
 // bit array def
 namespace kun
@@ -486,31 +396,4 @@ template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::It  BitArray<Alloc
 template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::CIt BitArray<Alloc>::begin() const { return CIt(*this); }
 template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::CIt BitArray<Alloc>::end() const { return CIt(*this, m_size); }
 
-}// namespace kun
-
-// true bit iterator
-namespace kun
-{
-template<typename TS> class TrueBitIt
-{
-private:
-    const u32* m_data;       // data ptr
-    TS         m_size;       // data size(in bit)
-    TS         m_DWORD_index;// current DWORD index
-    TS         m_bit_index;  // current bit index
-    u32        m_mask;       // current bit mask
-    u32        m_start_mask; // mask to skip start bits
-};
-template<typename TS> class DualTrueBitIt
-{
-private:
-    const u32* m_data_a;     // data a ptr
-    const u32* m_data_b;     // data b ptr
-    TS         m_size_a;     // data a size(in bit)
-    TS         m_size_b;     // data b size(in bit)
-    TS         m_DWORD_index;// current DWORD index
-    TS         m_bit_index;  // current bit index
-    u32        m_mask;       // current bit mask
-    u32        m_start_mask; // mask to skip start bits
-};
 }// namespace kun
