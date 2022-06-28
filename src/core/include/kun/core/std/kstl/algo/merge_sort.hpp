@@ -7,7 +7,7 @@
 // merge sort help
 namespace kun::algo::__help
 {
-template<class T, class TP> void merge(T begin, T mid, T end, TP&& p)
+template<class T, class TP> KUN_INLINE void merge(T begin, T mid, T end, TP&& p)
 {
     T l_start = begin;
     T r_start = mid;
@@ -46,7 +46,7 @@ template<class T, class TP> void merge(T begin, T mid, T end, TP&& p)
 // merge sort impl
 namespace kun::algo
 {
-template<typename T, typename TP = Less<>, int MinMergeSubgroupSize = 2> void mergeSort(T begin, T end, TP&& p = TP())
+template<typename T, typename TP = Less<>, int MinMergeSubgroupSize = 2> KUN_INLINE void mergeSort(T begin, T end, TP&& p = TP())
 {
     Size subgroup_start = 0;
     Size count = end - begin;

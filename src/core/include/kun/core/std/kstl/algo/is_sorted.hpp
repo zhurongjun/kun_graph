@@ -4,7 +4,7 @@
 
 namespace kun::algo
 {
-template<typename T, typename TP = Less<>> bool isSorted(T begin, T end, TP p = TP())
+template<typename T, typename TP = Less<>> KUN_INLINE bool isSorted(T begin, T end, TP p = TP())
 {
     if (begin < end)
     {

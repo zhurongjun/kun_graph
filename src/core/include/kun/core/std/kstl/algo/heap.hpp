@@ -55,7 +55,7 @@ template<class T, typename TS, class TP = Less<>> KUN_INLINE TS heapSiftUp(T* he
 }
 
 // is heap
-template<typename T, typename TS, typename TP = Less<>> bool isHeap(T* heap, TS count, TP&& p = TP())
+template<typename T, typename TS, typename TP = Less<>> KUN_INLINE bool isHeap(T* heap, TS count, TP&& p = TP())
 {
     for (TS i = 1; i < count; ++i)
     {
@@ -82,7 +82,7 @@ template<typename T, typename TS, typename TP = Less<>> KUN_INLINE void heapify(
 }
 
 // heap sort
-template<typename T, typename TS, class TP = Less<>> void heapSort(T heap, TS count, TP&& p = TP())
+template<typename T, typename TS, class TP = Less<>> KUN_INLINE void heapSort(T heap, TS count, TP&& p = TP())
 {
     auto reverse_pred = [&](const auto& a, const auto& b) -> bool { return !p(a, b); };
 

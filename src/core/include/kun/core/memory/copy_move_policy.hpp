@@ -3,7 +3,7 @@
 #include "memory.h"
 
 // traits
-namespace kun
+namespace kun::memory
 {
 // can copy construct behaviour use memcpy
 template<typename T, typename U> struct is_bitwise_copyable
@@ -78,9 +78,9 @@ template<typename T> struct is_bitwise_comparable<T, T>
 };
 template<typename T, typename U> inline constexpr bool is_bitwise_comparable_v = is_bitwise_comparable<T, U>::value;
 
-}// namespace kun
+}// namespace kun::memory
 
-namespace kun
+namespace kun::memory
 {
 // construct & destruct
 template<typename T> KUN_INLINE void constructItems(T* p, Size count)
@@ -205,4 +205,4 @@ template<typename A, typename B> KUN_INLINE bool compareItems(const A* a, const 
         return true;
     }
 }
-}// namespace kun
+}// namespace kun::memory

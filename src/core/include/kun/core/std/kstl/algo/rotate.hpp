@@ -7,7 +7,7 @@
 namespace kun::algo
 {
 // rotate by complete system of residues
-template<typename T, typename TS> void rotate(T p, TS count, TS amount)
+template<typename T, typename TS> KUN_INLINE void rotate(T p, TS count, TS amount)
 {
     if (amount != 0)
     {

@@ -1,72 +1,48 @@
 #pragma once
 #include "kun/core/config.h"
 #include "kun/core/std/types.hpp"
+#include "kun/core/memory/copy_move_policy.hpp"
 
 namespace kun::algo
 {
-template<typename T, typename TP> T removeIf(T begin, T end, TP&& p = TP())
+template<typename T, typename TP> KUN_INLINE T removeIfStable(T begin, T end, TP&& p = TP())
 {
-    while (begin < end)
+    if (begin < end)
     {
-        // skip false part in head
-        while (!p(*begin))
-        {
-            ++begin;
-            if (begin == end)
-            {
-                break;
-            }
-        }
+        auto write = begin;
+        auto read = begin;
+        bool do_remove = !p(*read);
 
-        // skip true part in tail
         do {
-            --end;
-            if (begin == end)
+            auto run_start = read;
+            ++read;
+
+            // collect run scope
+            while (read < end && do_remove == p(*read)) { ++read; }
+            Size run_len = read - run_start;
+            KUN_Assert(run_len > 0);
+
+            // do scope op
+            if (do_remove)
             {
-                break;
+                // destruct items
+                ::kun::memory::destructItem(run_start, run_len);
             }
-        } while (p(*end));
+            else
+            {
+                // move item
+                if (write != begin)
+                {
+                    // move items
+                    ::kun::memory::moveAssignItems(write, run_start, run_len);
+                }
+                write += run_len;
+            }
 
-        // move bad point
-        *begin = std::move(end);
-        ++begin;
-        --end;
+            // update flag
+            do_remove = !do_remove;
+        } while (read < end)
     }
-    return begin;
-}
-template<typename T, typename TP> T removeIfStable(T begin, T end, TP&& p = TP())
-{
-    auto write = begin;
-
-    // skip head
-    while (write < end)
-    {
-        if (p(*write))
-        {
-            break;
-        }
-
-        ++write;
-    }
-
-    // read ptr
-    auto read = write;
-    ++read;
-
-    // add item from read ptr to write ptr
-    while (read < end)
-    {
-        // move
-        if (!p(*read))
-        {
-            *write = std::move(*read);
-            ++write;
-        }
-
-        ++read;
-    }
-
-    return write;
 }
 
 }// namespace kun::algo

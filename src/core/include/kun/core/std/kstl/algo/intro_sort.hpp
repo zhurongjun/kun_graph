@@ -7,7 +7,7 @@
 // introspective sort
 namespace kun::algo
 {
-template<typename T, typename TP = Less<>> void introSort(T begin, T end, TP&& p = TP())
+template<typename T, typename TP = Less<>> KUN_INLINE void introSort(T begin, T end, TP&& p = TP())
 {
     // simulate stack
     struct Stack
@@ -76,11 +76,9 @@ template<typename T, typename TP = Less<>> void introSort(T begin, T end, TP&& p
             while (true)
             {
                 // find item witch bigger than head, from min to max
-                while (++inner.min <= current.max && !p(*current.min, *inner.min))
-                    ;
+                while (++inner.min <= current.max && !p(*current.min, *inner.min)) {}
                 // find item witch less than head, from max to min
-                while (--inner.max > current.min && !p(*inner.max, *current.min))
-                    ;
+                while (--inner.max > current.min && !p(*inner.max, *current.min)) {}
                 // end split items
                 if (inner.min > inner.max)
                 {

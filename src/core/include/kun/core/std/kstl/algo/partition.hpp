@@ -5,7 +5,7 @@
 
 namespace kun::algo
 {
-template<typename T, typename TP> T partition(T begin, T end, TP&& p = TP())
+template<typename T, typename TP> KUN_INLINE T partition(T begin, T end, TP&& p = TP())
 {
     while (begin < end)
     {
