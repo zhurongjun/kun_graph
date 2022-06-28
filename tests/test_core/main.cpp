@@ -25,6 +25,21 @@ void print_func_table_exist(const kun::TypeFuncTable& table)
 #undef KUN_PRINT_EXIST
 }
 
+class A
+{
+public:
+    A(int n)
+        : n(n)
+    {
+    }
+    A(const A& other, int n = 0)
+        : n(other.n + n)
+    {
+    }
+
+    int n = 100;
+};
+
 int main()
 {
     // test func table
@@ -38,6 +53,6 @@ int main()
     for (kun::u32 i = 0; i < 1000; ++i) { val_arr[i] = 999 - i; }
     kun::algo::mergeSort(val_arr, val_arr + 1000);
     KUN_Verify(kun::algo::isSorted(val_arr, val_arr + 1000));
-
+    
     return 0;
 }

@@ -21,6 +21,7 @@ AlwaysBreakTemplateDeclarations: MultiLine
 Cpp11BracedListStyle: true
 IndentWrappedFunctionNames: false
 BreakBeforeBraces: Allman
+AlignConsecutiveDeclarations: true
 BraceWrapping:
   AfterCaseLabel: true
   AfterClass: true

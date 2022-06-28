@@ -5,79 +5,67 @@
 // traits
 namespace kun::memory
 {
-// can copy construct behaviour use memcpy
-template<typename T, typename U> struct is_bitwise_copyable
+// memory policy traits
+template<typename A, typename B = A> struct memory_policy_traits
 {
-    static_assert(!std::is_lvalue_reference_v<T> && !std::is_lvalue_reference_v<U>, "is_bitwise_copyable is not designed to accept reference types");
+    static constexpr bool call_ctor = true;
+    static constexpr bool call_dtor = true;
+    static constexpr bool call_copy = true;
+    static constexpr bool call_move = true;
+    static constexpr bool call_assign = true;
+    static constexpr bool call_move_assign = true;
+    static constexpr bool call_compare = true;
+    static constexpr bool use_realloc = false;
+};
+template<typename T> struct memory_policy_traits<T, T>
+{
+    static constexpr bool call_ctor = !std::is_trivially_constructible_v<T>;
+    static constexpr bool call_dtor = !std::is_trivially_destructible_v<T>;
+    static constexpr bool call_copy = !std::is_trivially_copyable_v<T>;
+    static constexpr bool call_move = !std::is_trivially_move_constructible_v<T>;
+    static constexpr bool call_assign = !std::is_trivially_assignable_v<std::add_lvalue_reference_t<T>, std::add_lvalue_reference_t<T>>;
+    static constexpr bool call_move_assign = !std::is_trivially_move_assignable_v<T>;
+    static constexpr bool call_compare = !std::is_trivial_v<T>;
+    static constexpr bool use_realloc = std::is_trivial_v<T>;
+};
+template<typename T> struct memory_policy_traits<T*, T*>
+{
+    static constexpr bool call_ctor = false;
+    static constexpr bool call_dtor = false;
+    static constexpr bool call_copy = false;
+    static constexpr bool call_move = false;
+    static constexpr bool call_assign = false;
+    static constexpr bool call_move_assign = false;
+    static constexpr bool call_compare = false;
+    static constexpr bool use_realloc = true;
+};
+template<typename A, typename B> struct memory_policy_traits<const A, B> : public memory_policy_traits<A, B>
+{
+};
 
-    static_assert(std::is_same_v<T, std::remove_cv_t<T>> && std::is_same_v<U, std::remove_cv_t<U>>,
-                  "is_bitwise_copyable is not designed to accept qualified types");
+#define KUN_IMPL_BASIC_MEM_POLICY(dst, src)                                                                                                          \
+    template<> struct memory_policy_traits<dst, src>                                                                                                 \
+    {                                                                                                                                                \
+        static constexpr bool call_ctor = false;                                                                                                     \
+        static constexpr bool call_dtor = false;                                                                                                     \
+        static constexpr bool call_copy = false;                                                                                                     \
+        static constexpr bool call_move = false;                                                                                                     \
+        static constexpr bool call_assign = false;                                                                                                   \
+        static constexpr bool call_move_assign = false;                                                                                              \
+        static constexpr bool call_compare = true;                                                                                                   \
+        static constexpr bool use_realloc = true;                                                                                                    \
+    };
 
-    static constexpr bool value = false;
-};
-template<typename T> struct is_bitwise_copyable<T, T>
-{
-    static constexpr bool value = std::is_trivially_copy_constructible_v<T>;
-};
-template<typename T, typename U> struct is_bitwise_copyable<const T, U> : public is_bitwise_copyable<T, U>
-{
-};
-template<typename T> struct is_bitwise_copyable<const T*, T*>
-{
-    static constexpr bool value = true;
-};
-template<> struct is_bitwise_copyable<u8, i8>
-{
-    static constexpr bool value = true;
-};
-template<> struct is_bitwise_copyable<i8, u8>
-{
-    static constexpr bool value = true;
-};
-template<> struct is_bitwise_copyable<u16, i16>
-{
-    static constexpr bool value = true;
-};
-template<> struct is_bitwise_copyable<i16, u16>
-{
-    static constexpr bool value = true;
-};
-template<> struct is_bitwise_copyable<u32, i32>
-{
-    static constexpr bool value = true;
-};
-template<> struct is_bitwise_copyable<i32, u32>
-{
-    static constexpr bool value = true;
-};
-template<> struct is_bitwise_copyable<u64, i64>
-{
-    static constexpr bool value = true;
-};
-template<> struct is_bitwise_copyable<i64, u64>
-{
-    static constexpr bool value = true;
-};
-template<typename T, typename U> inline constexpr bool is_bitwise_copyable_v = is_bitwise_copyable<T, U>::value;
+KUN_IMPL_BASIC_MEM_POLICY(u8, i8)
+KUN_IMPL_BASIC_MEM_POLICY(i8, u8)
+KUN_IMPL_BASIC_MEM_POLICY(u16, i16)
+KUN_IMPL_BASIC_MEM_POLICY(i16, u16)
+KUN_IMPL_BASIC_MEM_POLICY(u32, i32)
+KUN_IMPL_BASIC_MEM_POLICY(i32, u32)
+KUN_IMPL_BASIC_MEM_POLICY(u64, i64)
+KUN_IMPL_BASIC_MEM_POLICY(i64, u64)
 
-// can assign behaviour use memcpy
-template<typename T, typename U> struct is_bitwise_assignable
-{
-    static constexpr bool value = std::is_trivially_assignable_v<std::add_lvalue_reference_t<T>, std::add_lvalue_reference_t<U>>;
-};
-template<typename T, typename U> inline constexpr bool is_bitwise_assignable_v = is_bitwise_assignable<T, U>::value;
-
-// can compare behaviour use memcmp
-template<typename T, typename U> struct is_bitwise_comparable
-{
-    static constexpr bool value = false;
-};
-template<typename T> struct is_bitwise_comparable<T, T>
-{
-    static constexpr bool value = std::is_trivial_v<T>;
-};
-template<typename T, typename U> inline constexpr bool is_bitwise_comparable_v = is_bitwise_comparable<T, U>::value;
-
+#undef KUN_IMPL_BASIC_MEM_POLICY
 }// namespace kun::memory
 
 namespace kun::memory
@@ -85,7 +73,7 @@ namespace kun::memory
 // construct & destruct
 template<typename T> KUN_INLINE void constructItems(T* p, Size count)
 {
-    if constexpr (!std::is_trivially_constructible_v<T>)
+    if constexpr (memory_policy_traits<T>::call_ctor)
     {
         while (count)
         {
@@ -97,7 +85,7 @@ template<typename T> KUN_INLINE void constructItems(T* p, Size count)
 }
 template<typename T> KUN_INLINE void destructItem(T* p, Size count)
 {
-    if constexpr (!std::is_trivially_destructible_v<T>)
+    if constexpr (memory_policy_traits<T>::call_dtor)
     {
         while (count)
         {
@@ -113,11 +101,7 @@ template<typename T> KUN_INLINE void destructItem(T* p, Size count)
 // copy & assign
 template<typename Dst, typename Src> KUN_INLINE void copyItems(Dst* dst, Src* src, Size count)
 {
-    if constexpr (is_bitwise_copyable_v<Dst, Src>)
-    {
-        memory::memcpy(dst, src, sizeof(Src) * count);
-    }
-    else
+    if constexpr (memory_policy_traits<Dst, Src>::call_copy)
     {
         while (count)
         {
@@ -127,14 +111,14 @@ template<typename Dst, typename Src> KUN_INLINE void copyItems(Dst* dst, Src* sr
             --count;
         }
     }
-}
-template<typename Dst, typename Src> KUN_INLINE void assignItems(Dst* dst, Src* src, Size count)
-{
-    if constexpr (is_bitwise_assignable_v<Dst, Src>)
+    else
     {
         memory::memcpy(dst, src, sizeof(Src) * count);
     }
-    else
+}
+template<typename Dst, typename Src> KUN_INLINE void assignItems(Dst* dst, Src* src, Size count)
+{
+    if constexpr (memory_policy_traits<Dst, Src>::call_assign)
     {
         while (count)
         {
@@ -144,16 +128,16 @@ template<typename Dst, typename Src> KUN_INLINE void assignItems(Dst* dst, Src* 
             --count;
         }
     }
+    else
+    {
+        memory::memcpy(dst, src, sizeof(Src) * count);
+    }
 }
 
 // move copy & move assign
 template<typename Dst, typename Src> KUN_INLINE void moveCopyItems(Dst* dst, Src* src, Size count)
 {
-    if constexpr (is_bitwise_copyable_v<Dst, Src>)
-    {
-        memory::memmove(dst, src, sizeof(Src) * count);
-    }
-    else
+    if constexpr (memory_policy_traits<Dst, Src>::call_move)
     {
         while (count)
         {
@@ -163,14 +147,14 @@ template<typename Dst, typename Src> KUN_INLINE void moveCopyItems(Dst* dst, Src
             --count;
         }
     }
-}
-template<typename Dst, typename Src> KUN_INLINE void moveAssignItems(Dst* dst, Src* src, Size count)
-{
-    if constexpr (is_bitwise_assignable_v<Dst, Src>)
+    else
     {
         memory::memmove(dst, src, sizeof(Src) * count);
     }
-    else
+}
+template<typename Dst, typename Src> KUN_INLINE void moveAssignItems(Dst* dst, Src* src, Size count)
+{
+    if constexpr (memory_policy_traits<Dst, Src>::call_move_assign)
     {
         while (count)
         {
@@ -180,16 +164,16 @@ template<typename Dst, typename Src> KUN_INLINE void moveAssignItems(Dst* dst, S
             --count;
         }
     }
+    else
+    {
+        memory::memmove(dst, src, sizeof(Src) * count);
+    }
 }
 
 // compare
 template<typename A, typename B> KUN_INLINE bool compareItems(const A* a, const B* b, Size count)
 {
-    if constexpr (is_bitwise_comparable_v<A, B>)
-    {
-        return !memcmp(a, b, sizeof(B) * count);
-    }
-    else
+    if constexpr (memory_policy_traits<A, B>::call_compare)
     {
         while (count)
         {
@@ -203,6 +187,10 @@ template<typename A, typename B> KUN_INLINE bool compareItems(const A* a, const 
             --count;
         }
         return true;
+    }
+    else
+    {
+        return !memcmp(a, b, sizeof(B) * count);
     }
 }
 }// namespace kun::memory
