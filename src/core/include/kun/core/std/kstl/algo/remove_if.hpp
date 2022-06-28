@@ -2,6 +2,7 @@
 #include "kun/core/config.h"
 #include "kun/core/std/types.hpp"
 #include "kun/core/memory/copy_move_policy.hpp"
+#include "kun/core/functional/assert.hpp"
 
 namespace kun::algo
 {

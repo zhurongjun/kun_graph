@@ -12,4 +12,18 @@ KUN_CORE_API u64 bitScan(u64 v);
 KUN_CORE_API u32 bitScan(u32 v);
 KUN_CORE_API u64 bitScanR(u64 v);
 KUN_CORE_API u32 bitScanR(u32 v);
+
+// integer ceil floor round
+template<class T> T divCeil(T a, T b);
+template<class T> T divFloor(T a, T b);
+template<class T> T divRound(T a, T b);
+
+}// namespace kun
+
+// impl
+namespace kun
+{
+template<class T> T divCeil(T a, T b) { return (a + b - 1) / b; }
+template<class T> T divFloor(T a, T b) { return a / b; }
+template<class T> T divRound(T a, T b) { return (a >= 0) ? (a + b / 2) / b : (a - b / 2 + 1) / b; }
 }// namespace kun

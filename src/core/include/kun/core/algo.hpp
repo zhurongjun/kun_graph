@@ -15,3 +15,4 @@
 #include "std/kstl/algo/merge_sort.hpp"
 #include "std/kstl/algo/partition.hpp"
 #include "std/kstl/algo/remove_if.hpp"
+#include "std/kstl/algo/bit_array.hpp"
