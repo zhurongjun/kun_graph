@@ -53,6 +53,6 @@ int main()
     for (kun::u32 i = 0; i < 1000; ++i) { val_arr[i] = 999 - i; }
     kun::algo::mergeSort(val_arr, val_arr + 1000);
     KUN_Verify(kun::algo::isSorted(val_arr, val_arr + 1000));
-    
+
     return 0;
 }

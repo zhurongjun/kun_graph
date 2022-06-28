@@ -26,7 +26,7 @@ template<typename T> struct memory_policy_traits<T, T>
     static constexpr bool call_assign = !std::is_trivially_assignable_v<std::add_lvalue_reference_t<T>, std::add_lvalue_reference_t<T>>;
     static constexpr bool call_move_assign = !std::is_trivially_move_assignable_v<T>;
     static constexpr bool call_compare = !std::is_trivial_v<T>;
-    static constexpr bool use_realloc = std::is_trivial_v<T>;
+    static constexpr bool use_realloc = std::is_trivial_v<T> && std::is_trivially_destructible_v<T>;
 };
 template<typename T> struct memory_policy_traits<T*, T*>
 {
@@ -135,7 +135,7 @@ template<typename Dst, typename Src> KUN_INLINE void assignItems(Dst* dst, Src* 
 }
 
 // move copy & move assign
-template<typename Dst, typename Src> KUN_INLINE void moveCopyItems(Dst* dst, Src* src, Size count)
+template<typename Dst, typename Src> KUN_INLINE void moveItems(Dst* dst, Src* src, Size count)
 {
     if constexpr (memory_policy_traits<Dst, Src>::call_move)
     {
