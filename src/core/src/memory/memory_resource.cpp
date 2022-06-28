@@ -1,6 +1,6 @@
 #include "kun/core/memory/memory_resource.h"
 
-namespace kun::memory
+namespace kun
 {
 class DefaultMemoryResource : public IMemoryResource
 {
@@ -14,4 +14,4 @@ IMemoryResource* defaultMemoryResource()
     static DefaultMemoryResource instance;
     return &instance;
 }
-}// namespace kun::memory
+}// namespace kun

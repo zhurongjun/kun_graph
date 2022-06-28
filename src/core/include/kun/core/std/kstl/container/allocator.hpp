@@ -43,7 +43,7 @@ template<typename TS> class DefaultChangePolicy
         TS result = first_grow;
 
         // calc grow
-        if (capacity || size > grow)
+        if (capacity || size > first_grow)
         {
             result = size + 3 * size / 8 + constant_grow;
         }
@@ -75,3 +75,47 @@ template<typename TS> class DefaultChangePolicy
 }// namespace kun
 
 // pmr allocator
+namespace kun
+{
+class PmrAllocator : public DefaultChangePolicy<Size>
+{
+    using SizeType = Size;
+
+    // ctor...
+    KUN_INLINE PmrAllocator(IMemoryResource* res = defaultMemoryResource())
+        : m_res(res)
+    {
+        KUN_Assert(m_res != nullptr);
+    }
+    KUN_INLINE PmrAllocator(const PmrAllocator&) = default;
+    KUN_INLINE PmrAllocator(PmrAllocator&&) = default;
+    KUN_INLINE PmrAllocator& operator=(const PmrAllocator&) = default;
+    KUN_INLINE PmrAllocator& operator=(PmrAllocator&&) = default;
+
+    // impl
+    KUN_INLINE SizeType freeRaw(void*& p, SizeType align)
+    {
+        m_res->free(p);
+        return 0;
+    }
+    KUN_INLINE SizeType reserveRaw(void*& p, SizeType size, SizeType align)
+    {
+        if (p)
+        {
+            p = m_res->realloc(p, size, align);
+        }
+        else
+        {
+            p = m_res->alloc(size, align);
+        }
+        return size;
+    }
+
+    // helper
+    template<typename T> KUN_INLINE SizeType free(T*& p) { return freeRaw(p); }
+    template<typename T> KUN_INLINE SizeType reserve(T*& p, SizeType size) { return reserveRaw(p, size * sizeof(T), alignof(size)); }
+
+private:
+    IMemoryResource* m_res;
+};
+}// namespace kun

@@ -5,7 +5,7 @@
 #include "memory.h"
 
 // allocator interface
-namespace kun::memory
+namespace kun
 {
 class IMemoryResource
 {
@@ -22,10 +22,10 @@ public:
     template<typename T> KUN_INLINE T* realloc(T* p, Size count = 1) { return (T*)realloc(p, count * sizeof(T), alignof(T)); }
     template<typename T> KUN_INLINE void free(T* p) { free(p); }
 };
-}// namespace kun::memory
+}// namespace kun
 
 // default allocator
-namespace kun::memory
+namespace kun
 {
 KUN_CORE_API IMemoryResource* defaultMemoryResource();
 }
