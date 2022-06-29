@@ -41,59 +41,59 @@ template<typename TS> KUN_INLINE void setWords(u32* words, TS num_words, bool v)
     else
     {
         u32 word = v ? DWORDFullMask : DWORDEmptyMask;
-        for (TS i = 0; i < num_words; ++i) { words[i] = words; }
+        for (TS i = 0; i < num_words; ++i) { words[i] = word; }
     }
 }
-template<typename TS> KUN_INLINE void setBitRange(u32* data, TS index, TS num, bool v)
+template<typename TS> KUN_INLINE void setBitRange(u32* data, TS start, TS num, bool v)
 {
-    if (num == 0)
-        return;
-
-    // calculate dword index and count
-    TS dword_start_index = divFloor(index, NumBitsPerDWORD);
-    TS dword_count = divCeil(index + num, NumBitsPerDWORD) - dword_start_index;
-
-    // calculate mask
-    u32 start_mask = firstWordMask(index);
-    u32 end_mask = lastWordMask(index + num);
-
-    u32* d = data + dword_start_index;
-    if (v)
+    if (num != 0)
     {
-        // set to true
-        if (dword_count == 1)
+        // calculate dword index and count
+        TS dword_start_index = divFloor(start, (TS)NumBitsPerDWORD);
+        TS dword_count = divCeil(start + num, (TS)NumBitsPerDWORD) - dword_start_index;
+
+        // calculate mask
+        u32 start_mask = firstWordMask(start);
+        u32 end_mask = lastWordMask(start + num);
+
+        data += dword_start_index;
+        if (v)
         {
-            *d |= start_mask & end_mask;
+            // set to true
+            if (dword_count == 1)
+            {
+                *data |= start_mask & end_mask;
+            }
+            else
+            {
+                *data++ |= start_mask;
+                dword_count -= 2;// exclude start and end
+                while (dword_count != 0)
+                {
+                    *data++ = DWORDFullMask;
+                    --dword_count;
+                }
+                *data |= end_mask;
+            }
         }
         else
         {
-            *d++ |= start_mask;
-            dword_count -= 2;// exclude start and end
-            while (dword_count != 0)
+            // set to false
+            if (dword_count == 1)
             {
-                *d++ = DWORDFullMask;
-                --dword_count;
+                *data &= ~(start_mask & end_mask);
             }
-            *d |= end_mask;
-        }
-    }
-    else
-    {
-        // set to false
-        if (dword_count == 1)
-        {
-            *d &= ~(start_mask & end_mask);
-        }
-        else
-        {
-            *d++ &= ~start_mask;
-            dword_count -= 2;// exclude start and end
-            while (dword_count != 0)
+            else
             {
-                *d++ = 0;
-                --dword_count;
+                *data++ &= ~start_mask;
+                dword_count -= 2;// exclude start and end
+                while (dword_count != 0)
+                {
+                    *data++ = 0;
+                    --dword_count;
+                }
+                *data &= ~end_mask;
             }
-            *d &= ~end_mask;
         }
     }
 }

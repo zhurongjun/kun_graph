@@ -36,10 +36,13 @@ private:
 // bit iterator
 namespace kun
 {
-template<typename TS, bool Const> class BitIt
+template<typename TS, bool Const> struct BitIt
 {
+public:
+    template<typename TAlloc> using BitArrayType = std::conditional_t<Const, const BitArray<TAlloc>, BitArray<TAlloc>>;
     using DataPtr = std::conditional_t<Const, const u32*, u32*>;
-    using Ref = std::conditional_t<Const, bool, BitRef>;
+    using RefType = std::conditional_t<Const, bool, BitRef>;
+
     KUN_INLINE BitIt(DataPtr data, TS size, TS start = 0)
         : m_data(data)
         , m_size(size)
@@ -71,9 +74,9 @@ template<typename TS, bool Const> class BitIt
     KUN_INLINE bool     operator!() const { return !(bool)*this; }
     KUN_INLINE bool     operator==(const BitIt& rhs) const { return m_data == rhs.m_data && m_bit_index == rhs.m_bit_index; }
     KUN_INLINE bool     operator!=(const BitIt& rhs) const { return !(*this == rhs); }
-    KUN_INLINE Ref      operator*() const { return value(); }
+    KUN_INLINE RefType  operator*() const { return value(); }
 
-    KUN_INLINE Ref value() const
+    KUN_INLINE RefType value() const
     {
         if constexpr (Const)
         {
@@ -81,17 +84,17 @@ template<typename TS, bool Const> class BitIt
         }
         else
         {
-            return Ref(m_data[m_DWORD_index], m_mask);
+            return RefType(m_data[m_DWORD_index], m_mask);
         }
     }
     KUN_INLINE TS index() const { return m_bit_index; }
 
 private:
-    DataPtr* m_data;       // data ptr
-    TS       m_size;       // data size(in bit)
-    TS       m_bit_index;  // current bit index
-    TS       m_DWORD_index;// current DWORD index
-    u32      m_mask;       // current bit mask
+    DataPtr m_data;       // data ptr
+    TS      m_size;       // data size(in bit)
+    TS      m_bit_index;  // current bit index
+    TS      m_DWORD_index;// current DWORD index
+    u32     m_mask;       // current bit mask
 };
 }// namespace kun
 
@@ -101,7 +104,7 @@ namespace kun
 template<typename TS> class TrueBitIt
 {
 public:
-    KUN_INLINE TrueBitIt(const u32* data, TS size, TS start)
+    KUN_INLINE TrueBitIt(const u32* data, TS size, TS start = 0)
         : m_data(data)
         , m_size(size)
         , m_bit_index(start)
@@ -113,7 +116,7 @@ public:
         _findFirstSetBit();
     }
     template<typename TAlloc>
-    KUN_INLINE TrueBitIt(const TrueBitIt<TAlloc>& arr, TS start)
+    KUN_INLINE TrueBitIt(const BitArray<TAlloc>& arr, TS start = 0)
         : TrueBitIt(arr.data(), arr.size(), start)
     {
     }

@@ -15,10 +15,11 @@ public:
     using SizeType = typename Alloc::SizeType;
     using It = BitIt<SizeType, false>;
     using CIt = BitIt<SizeType, true>;
+    using TIt = TrueBitIt<SizeType>;
 
     // ctor & dtor
     BitArray(Alloc alloc = Alloc());
-    BitArray(bool v, SizeType size, Alloc alloc = Alloc());
+    BitArray(SizeType size, bool v, Alloc alloc = Alloc());
     ~BitArray();
 
     // copy & move ctor
@@ -32,7 +33,6 @@ public:
     // compare
     bool operator==(const BitArray& rhs) const;
     bool operator!=(const BitArray& rhs) const;
-    bool operator<(const BitArray& rhs) const;
 
     // getter
     u32*         data();
@@ -43,10 +43,6 @@ public:
     const Alloc& allocator() const;
     bool         empty();
 
-    // operator []
-    BitRef operator[](SizeType idx);
-    bool   operator[](SizeType idx) const;
-
     // memory op
     void clear();
     void release(SizeType capacity = 0);
@@ -54,13 +50,17 @@ public:
     void resize(SizeType size, bool new_value);
     void resizeUnsafe(SizeType size);
 
-    // push
+    // add
     SizeType add(bool v);
     SizeType add(bool v, SizeType n);
 
     // remove
     void removeAt(SizeType start, SizeType n = 1);
     void removeAtSwap(SizeType start, SizeType n = 1);
+
+    // modify
+    BitRef operator[](SizeType idx);
+    bool   operator[](SizeType idx) const;
 
     // find
     SizeType find(bool v) const;
@@ -138,6 +138,7 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::_resize(SizeType size)
     {
         // free
         m_allocator.free(m_data);
+        m_data = 0;
         m_capacity = 0;
         m_size = 0;
     }
@@ -153,7 +154,7 @@ KUN_INLINE BitArray<Alloc>::BitArray(Alloc alloc)
 {
 }
 template<typename Alloc>
-KUN_INLINE BitArray<Alloc>::BitArray(bool v, SizeType size, Alloc alloc)
+KUN_INLINE BitArray<Alloc>::BitArray(SizeType size, bool v, Alloc alloc)
     : m_data(nullptr)
     , m_size(0)
     , m_capacity(0)
@@ -186,10 +187,24 @@ KUN_INLINE BitArray<Alloc>::BitArray(BitArray&& other)
     , m_capacity(other.m_capacity)
     , m_allocator(std::move(other.m_allocator))
 {
+    other.m_data = nullptr;
+    other.m_size = 0;
+    other.m_capacity = 0;
 }
 
 // copy & move assign
 template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(const BitArray& rhs)
+{
+    if (this == &rhs)
+        return *this;
+
+    _resize(rhs.m_size);
+    m_size = rhs.m_size;
+    if (m_size)
+        memory::memcpy(m_data, rhs.m_data, algo::calcNumWords(m_size) * sizeof(u32));
+    return *this;
+}
+template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(BitArray&& rhs)
 {
     if (this == &rhs)
         return *this;
@@ -206,42 +221,20 @@ template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(
     rhs.m_capacity = 0;
     return *this;
 }
-template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(BitArray&& rhs)
-{
-    if (this == &rhs)
-        return *this;
-
-    _resize(rhs.m_size);
-    m_size = rhs.m_size;
-    if (m_size)
-        memory::memcpy(m_data, rhs.m_data, algo::calcNumWords(m_size) * sizeof(u32));
-    return *this;
-}
 
 // compare
 template<typename Alloc> KUN_INLINE bool BitArray<Alloc>::operator==(const BitArray& rhs) const
 {
     if (m_size != rhs.m_size)
         return false;
-    return memory::memcmp(m_data, rhs.m_data, algo::calcNumWords(m_size) * sizeof(u32));
+
+    auto word_count = divFloor(m_size, (SizeType)algo::NumBitsPerDWORD);
+    auto last_mask = algo::lastWordMask(m_size);
+    bool memcmp_result = memory::memcmp(m_data, rhs.m_data, word_count * sizeof(u32)) == 0;
+    bool last_result = last_mask == algo::DWORDFullMask || (m_data[word_count] & last_mask) == (rhs.m_data[word_count] & last_mask);
+    return memcmp_result && last_result;
 }
 template<typename Alloc> KUN_INLINE bool BitArray<Alloc>::operator!=(const BitArray& rhs) const { return !(*this == rhs); }
-template<typename Alloc> KUN_INLINE bool BitArray<Alloc>::operator<(const BitArray& rhs) const
-{
-    if (m_size != rhs.m_size)
-        return m_size < rhs.m_size;
-
-    SizeType num_words = algo::calcNumWords(m_size);
-
-    for (SizeType i = 0; i < num_words; i++)
-    {
-        if (m_data[i] != rhs.m_data[i])
-        {
-            return m_data[i] < rhs.m_data[i];
-        }
-    }
-    return false;
-}
 
 // getter
 template<typename Alloc> KUN_INLINE u32*                               BitArray<Alloc>::data() { return m_data; }
@@ -251,18 +244,6 @@ template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::SizeType BitArray<
 template<typename Alloc> KUN_INLINE Alloc&                             BitArray<Alloc>::allocator() { return m_allocator; }
 template<typename Alloc> KUN_INLINE const Alloc&                       BitArray<Alloc>::allocator() const { return m_allocator; }
 template<typename Alloc> KUN_INLINE bool                               BitArray<Alloc>::empty() { return m_size == 0; }
-
-// operator []
-template<typename Alloc> KUN_INLINE BitRef BitArray<Alloc>::operator[](SizeType idx)
-{
-    KUN_Assert(isValidIndex(idx));
-    return BitRef(m_data[idx >> algo::NumBitsPerDWORDLogTwo], 1 << (idx & algo::PerDWORDMask));
-}
-template<typename Alloc> KUN_INLINE bool BitArray<Alloc>::operator[](SizeType idx) const
-{
-    KUN_Assert(isValidIndex(idx));
-    return m_data[idx >> algo::NumBitsPerDWORDLogTwo] & (1 << (idx & algo::PerDWORDMask));
-}
 
 // memory op
 template<typename Alloc> KUN_INLINE void BitArray<Alloc>::clear()
@@ -293,9 +274,9 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::resize(SizeType size, 
     }
 
     // try init
-    if (size > m_size)
+    if (size > old_size)
     {
-        setRange(old_size, size, new_value);
+        setRange(old_size, size - old_size, new_value);
     }
 }
 template<typename Alloc> KUN_INLINE void BitArray<Alloc>::resizeUnsafe(SizeType size)
@@ -310,14 +291,12 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::resizeUnsafe(SizeType 
     m_size = size;
 }
 
-// push
+// add
 template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::SizeType BitArray<Alloc>::add(bool v)
 {
-    _grow(1);
-
-    // increment size
+    // do grow
     auto old_size = m_size;
-    ++m_size;
+    _grow(1);
 
     // set value
     (*this)[old_size] = v;
@@ -325,14 +304,12 @@ template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::SizeType BitArray<
 }
 template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::SizeType BitArray<Alloc>::add(bool v, SizeType n)
 {
+    // do grow
+    auto old_size = m_size;
     _grow(n);
 
-    // increment size
-    auto old_size = m_size;
-    m_size += n;
-
     // set value
-    setRange(old_size, m_size, v);
+    setRange(old_size, n, v);
     return old_size;
 }
 
@@ -348,6 +325,7 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::removeAt(SizeType star
         while (read)
         {
             *write = *read;
+            ++write;
             ++read;
         }
     }
@@ -359,12 +337,24 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::removeAtSwap(SizeType 
     if (start + n != m_size)
     {
         // adjust n
-        n = std::min(n, m_size - start - n);
+        auto move_n = std::min(n, m_size - start - n);
 
         // copy items
-        for (SizeType i = 0; i < n; ++i) { (*this)[start + i] = (*this)[m_size - n + i]; }
+        for (SizeType i = 0; i < move_n; ++i) { (*this)[start + i] = (*this)[m_size - move_n + i]; }
     }
     m_size -= n;
+}
+
+// modify
+template<typename Alloc> KUN_INLINE BitRef BitArray<Alloc>::operator[](SizeType idx)
+{
+    KUN_Assert(isValidIndex(idx));
+    return BitRef(m_data[idx >> algo::NumBitsPerDWORDLogTwo], 1 << (idx & algo::PerDWORDMask));
+}
+template<typename Alloc> KUN_INLINE bool BitArray<Alloc>::operator[](SizeType idx) const
+{
+    KUN_Assert(isValidIndex(idx));
+    return m_data[idx >> algo::NumBitsPerDWORDLogTwo] & (1 << (idx & algo::PerDWORDMask));
 }
 
 // find

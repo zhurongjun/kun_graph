@@ -49,6 +49,9 @@ elseif (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
     add_compile_definitions(KUN_DBG_LEVEL=1)
 endif ()
 
+# enable unity build
+set(CMAKE_UNITY_BUILD ON)
+
 # options
 option(KUN_WITH_TEST "enable test for kun" ON)
 
@@ -61,6 +64,12 @@ add_subdirectory(src/core)
 
 # test code
 if (KUN_WITH_TEST)
+    # enable test
     enable_testing()
+
+    # find gtest lib
+    find_package(GTest REQUIRED)
+
+    # add test targets
     add_subdirectory(tests/test_core)
 endif ()
