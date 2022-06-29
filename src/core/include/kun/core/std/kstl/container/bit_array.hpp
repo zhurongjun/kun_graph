@@ -109,7 +109,7 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::_grow(SizeType size)
         SizeType new_word_capacity = m_allocator.getGrow(new_word_size, old_word_capacity);
 
         // realloc
-        m_allocator.resizeContainer(m_data, old_word_size, old_word_capacity, new_word_capacity);
+        m_data = m_allocator.resizeContainer(m_data, old_word_size, old_word_capacity, new_word_capacity);
 
         // update capacity
         m_capacity = new_word_capacity << algo::NumBitsPerDWORDLogTwo;

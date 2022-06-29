@@ -1,4 +1,3 @@
-#pragma once
 #include "kun/core/math/basic.h"
 
 #if KUN_COMPILER == KUN_COMPILER_MSVC

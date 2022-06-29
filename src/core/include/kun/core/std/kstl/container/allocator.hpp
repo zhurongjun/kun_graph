@@ -18,11 +18,11 @@ public:
     // KUN_INLINE void* reallocRaw(void* p, SizeType size, SizeType align);
 
     // helper
-    template<typename T> KUN_INLINE void free(T*& p) { static_cast<TDerived*>(this)->freeRaw(p); }
-    template<typename T> KUN_INLINE T* alloc(SizeType size) { return (T*)static_cast<TDerived*>(this)->allocRaw(p, size * sizeof(T), alignof(size)); }
-    template<typename T> KUN_INLINE T* realloc(T* p, SizeType size)
+    template<typename T> KUN_INLINE void free(T* p) { static_cast<TDerived*>(this)->freeRaw(p, alignof(T)); }
+    template<typename T> KUN_INLINE T*   alloc(SizeType size) { return (T*)static_cast<TDerived*>(this)->allocRaw(size * sizeof(T), alignof(T)); }
+    template<typename T> KUN_INLINE T*   realloc(T* p, SizeType size)
     {
-        return (T*)static_cast<TDerived*>(this)->reallocRaw(p, size * sizeof(T), alignof(size));
+        return (T*)static_cast<TDerived*>(this)->reallocRaw(p, size * sizeof(T), alignof(T));
     }
 
     // size > capacity, calc grow
@@ -73,14 +73,14 @@ public:
 
         if constexpr (memory::memory_policy_traits<T>::use_realloc)
         {
-            if (size > capacity / 3 * 2 || size >= new_capacity)
+            if (size && (size > capacity / 3 * 2 || size >= new_capacity))
             {
                 return realloc(p, new_capacity);
             }
         }
 
         // alloc new memory
-        T* new_memory = alloc(new_capacity);
+        T* new_memory = alloc<T>(new_capacity);
 
         // move memory
         if (size)
@@ -94,7 +94,7 @@ public:
             // release old memory
             free(p);
         }
-        
+
         return new_memory;
     }
 };
@@ -105,8 +105,7 @@ namespace kun
 {
 class PmrAllocator : public AllocTemplate<PmrAllocator, Size>
 {
-    using SizeType = Size;
-
+public:
     // ctor...
     KUN_INLINE PmrAllocator(IMemoryResource* res = defaultMemoryResource())
         : m_res(res)

@@ -9,6 +9,10 @@ else ()
     message(SEND_ERROR "lost vcpkg toolchain please set 'VCPKG_ROOT' env value")
 endif ()
 
+# fix warning
+message(STATUS "use compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "c flags: ${CMAKE_C_FLAGS}")
+
 # proj
 project(kun VERSION 0.0.0 LANGUAGES CXX)
 
@@ -24,7 +28,9 @@ if (WIN32)
     add_definitions(/Zc:__cplusplus)
 
     # enable exception handling
-    add_definitions(/GX)
+    if (DEFINED CMAKE_C_COMPILER)
+        add_definitions(/GX)
+    endif ()
 
     # prepare for big object
     # add_compile_options(/bigobj)
@@ -44,6 +50,7 @@ elseif (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
 endif ()
 
 # options
+option(KUN_WITH_TEST "enable test for kun" ON)
 
 # libraries
 include(cmake/global.cmake)
@@ -53,4 +60,7 @@ include(cmake/module.cmake)
 add_subdirectory(src/core)
 
 # test code
-add_subdirectory(tests/test_core)
+if (KUN_WITH_TEST)
+    enable_testing()
+    add_subdirectory(tests/test_core)
+endif ()

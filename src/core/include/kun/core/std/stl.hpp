@@ -34,3 +34,7 @@
 #include "kstl/container/fwd.hpp"
 #include "kstl/container/allocator.hpp"
 #include "kstl/container/bit_array.hpp"
+#include "kstl/container/array.hpp"
+#include "kstl/container/sparse_array.hpp"
+#include "kstl/container/uset.hpp"
+#include "kstl/container/umap.hpp"
