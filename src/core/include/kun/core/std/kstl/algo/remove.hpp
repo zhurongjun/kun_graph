@@ -6,7 +6,8 @@
 
 namespace kun::algo
 {
-template<typename T, typename TP> KUN_INLINE T removeIfStable(T begin, T end, TP&& p = TP())
+template<typename T, typename TP> KUN_INLINE T removeAt(T begin, T end, T remove_begin, T remove_end) {}
+template<typename T, typename TP> KUN_INLINE T removeIf(T begin, T end, TP&& p = TP())
 {
     if (begin < end)
     {
@@ -34,16 +35,17 @@ template<typename T, typename TP> KUN_INLINE T removeIfStable(T begin, T end, TP
                 // move item
                 if (write != begin)
                 {
-                    // move items
-                    ::kun::memory::moveAssignItems(write, run_start, run_len);
+                    // copy items
+                    ::kun::memory::copyItems(write, run_start, run_len);
                 }
                 write += run_len;
             }
 
             // update flag
             do_remove = !do_remove;
-        } while (read < end)
+        } while (read < end);
+        return write;
     }
+    return end;
 }
-
 }// namespace kun::algo

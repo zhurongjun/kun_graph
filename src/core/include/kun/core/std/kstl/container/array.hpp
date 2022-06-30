@@ -90,6 +90,8 @@ public:
     void assign(std::initializer_list<T> other);
 
     // remove
+    void     removeAt(SizeType index, SizeType n = 1);
+    void     removeAtSwap(SizeType index, SizeType n = 1);
     SizeType remove(const T& v);
     SizeType removeSwap(const T& v);
     SizeType removeLast(const T& v);
@@ -100,6 +102,10 @@ public:
     // remove by
     template<typename TP> SizeType removeBy(TP&& p);
     template<typename TP> SizeType removeBySwap(TP&& p);
+    template<typename TP> SizeType removeLastBy(TP&& p);
+    template<typename TP> SizeType removeLastBySwap(TP&& p);
+    template<typename TP> SizeType removeAllBy(TP&& p);
+    template<typename TP> SizeType removeAllBySwap(TP&& p);
 
     // modify
     T&       operator[](SizeType index);
