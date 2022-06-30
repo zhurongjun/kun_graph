@@ -59,35 +59,37 @@ public:
     void resizeDefault(SizeType size);
 
     // add
-    SizeType add(const T& v);
     SizeType add(T&& v);
-    SizeType add(const T& v, SizeType n);
+    SizeType add(const T& v, SizeType n = 1);
     SizeType addUnique(const T& v);
     SizeType addUnsafe(SizeType n = 1);
     SizeType addZeroed(SizeType n = 1);
     SizeType addDefault(SizeType n = 1);
-    void     addAt(SizeType idx, const T& v);
-    void     addAt(SizeType idx, T&& v);
-    void     addAt(SizeType idx, const Array& arr);
-    void     addAt(SizeType idx, std::initializer_list<T> init_list);
-    void     addAt(SizeType idx, T* p, SizeType n);
-    void     addAtUnsafe(SizeType idx, SizeType n = 1);
-    void     addAtZeroed(SizeType idx, SizeType n = 1);
-    SizeType addAtDefault(SizeType n = 1);
+
+    // add at
+    void addAt(SizeType idx, T&& v);
+    void addAt(SizeType idx, const T& v, SizeType n = 1);
+    void addAtUnsafe(SizeType idx, SizeType n = 1);
+    void addAtZeroed(SizeType idx, SizeType n = 1);
+    void addAtDefault(SizeType idx, SizeType n = 1);
 
     // emplace
     template<typename... Args> SizeType emplace(Args&&... args);
-    template<typename... Args> SizeType emplaceAt(SizeType index, Args&&... args);
+    template<typename... Args> void     emplaceAt(SizeType index, Args&&... args);
 
     // append
-    SizeType append(const Array& other);
-    SizeType append(Array&& other);
-    SizeType append(std::initializer_list<T> other);
+    SizeType append(const Array& arr);
+    SizeType append(std::initializer_list<T> init_list);
     SizeType append(T* p, SizeType n);
+
+    // append at
+    void appendAt(SizeType idx, const Array& arr);
+    void appendAt(SizeType idx, std::initializer_list<T> init_list);
+    void appendAt(SizeType idx, T* p, SizeType n);
 
     // assign
     void assign(T* p, SizeType n);
-    void assign(std::initializer_list<T> other);
+    void assign(std::initializer_list<T> init_list);
 
     // remove
     void     removeAt(SizeType index, SizeType n = 1);
@@ -199,12 +201,17 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::_resizeMem
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::_grow(SizeType n)
 {
     auto new_size = m_size + n;
+
+    // grow memory
     if (new_size > m_capacity)
     {
         auto new_capacity = m_alloc.getGrow(new_size, m_capacity);
         m_data = m_alloc.resizeContainer(m_data, m_size, m_capacity, new_capacity);
         m_capacity = new_capacity;
     }
+
+    // update size
+    m_size = new_size;
 }
 
 // ctor & dtor
@@ -284,8 +291,8 @@ template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>
 {
     if (this != &rhs)
     {
-        // release and resize
-        release(rhs.m_size);
+        // clear and resize
+        clear();
         resizeUnsafe(rhs.m_size);
 
         // copy items
@@ -330,7 +337,7 @@ template<typename T, typename Alloc> KUN_INLINE const Alloc&                    
 template<typename T, typename Alloc> KUN_INLINE bool                               Array<T, Alloc>::empty() { return m_size == 0; }
 
 // validate
-template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::isValidIndex(SizeType idx) const { return idx > 0 && idx < m_size; }
+template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::isValidIndex(SizeType idx) const { return idx >= 0 && idx < m_size; }
 template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::isValidPointer(const T* p) const { return p >= begin() && p < end(); }
 
 // memory op
@@ -361,62 +368,235 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::shrink()
 }
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resize(SizeType size, const T& new_value)
 {
-    // do unsafe resize
-    auto old_size = m_size;
-    resizeUnsafe(size);
-
-    // add or remove
-    if (size > old_size)
-    {
-        add(new_value, size - old_size);
-    }
-    else if (size < old_size)
-    {
-        removeAt(size, old_size - size);
-    }
-}
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeUnsafe(SizeType size)
-{
-    // do memory resize
-    if (m_capacity < size)
+    // explicit size
+    if (size > m_capacity)
     {
         _resizeMemory(size);
     }
 
-    // directly assign
-    m_size = size;
+    // add or remove
+    if (size > m_size)
+    {
+        add(new_value, size - m_size);
+    }
+    else if (size < m_size)
+    {
+        removeAt(size, m_size - size);
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeUnsafe(SizeType size)
+{
+    // explicit size
+    if (size > m_capacity)
+    {
+        _resizeMemory(size);
+    }
+
+    // add or remove
+    if (size > m_size)
+    {
+        addUnsafe(size - m_size);
+    }
+    else if (size < m_size)
+    {
+        removeAt(size, m_size - size);
+    }
 }
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeZeroed(SizeType size)
 {
-    // do unsafe resize
-    auto old_size = m_size;
-    resizeUnsafe(size);
+    // explicit size
+    if (size > m_capacity)
+    {
+        _resizeMemory(size);
+    }
 
     // add or remove
-    if (size > old_size)
+    if (size > m_size)
     {
-        addZeroed(size - old_size);
+        addZeroed(size - m_size);
     }
-    else if (size < old_size)
+    else if (size < m_size)
     {
-        removeAt(size, old_size - size);
+        removeAt(size, m_size - size);
     }
 }
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeDefault(SizeType size)
 {
-    // do unsafe resize
-    auto old_size = m_size;
-    resizeUnsafe(size);
+    // explicit size
+    if (size > m_capacity)
+    {
+        _resizeMemory(size);
+    }
 
     // add or remove
-    if (size > old_size)
+    if (size > m_size)
     {
-        addDefault(size - old_size);
+        addDefault(size - m_size);
     }
-    else if (size < old_size)
+    else if (size < m_size)
     {
-        removeAt(size, old_size - size);
+        removeAt(size, m_size - size);
     }
 }
+
+// add
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::add(T&& v)
+{
+    auto old_size = addUnsafe();
+    new (m_data + old_size) T(std::move(v));
+    return old_size;
+}
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::add(const T& v, SizeType n)
+{
+    auto old_size = addUnsafe(n);
+    for (SizeType i = old_size; i < m_size; ++i) { new (m_data + i) T(v); }
+    return old_size;
+}
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addUnique(const T& v)
+{
+    if (auto p = find(v))
+    {
+        return p - m_data;
+    }
+    else
+    {
+        return add(v);
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addUnsafe(SizeType n)
+{
+    _grow(n);
+    auto old_size = m_size;
+    return old_size;
+}
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addZeroed(SizeType n)
+{
+    auto old_size = addUnsafe(n);
+    memory::memzero(m_data + old_size, n * sizeof(T));
+    return old_size;
+}
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addDefault(SizeType n)
+{
+    auto old_size = addUnsafe(n);
+    for (SizeType i = old_size; i < m_size; ++i) { new (m_data + i) T(); }
+}
+
+// add at
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAt(SizeType idx, T&& v)
+{
+    KUN_Assert(isValidIndex(idx));
+    addAtUnsafe(idx);
+    new (m_data + idx) T(std::move(v));
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAt(SizeType idx, const T& v, SizeType n)
+{
+    KUN_Assert(isValidIndex(idx));
+    addAtUnsafe(idx, n);
+    for (SizeType i = 0; i < n; ++i) { new (m_data + idx + i) T(v); }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAtUnsafe(SizeType idx, SizeType n)
+{
+    KUN_Assert(isValidIndex(idx));
+    _grow(n);
+    memory::moveItems(m_data + idx + n, m_data + idx, m_size - idx - 1);
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAtZeroed(SizeType idx, SizeType n)
+{
+    KUN_Assert(isValidIndex(idx));
+    addAtUnsafe(idx, n);
+    memory::memzero(m_data + idx, n * sizeof(T));
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAtDefault(SizeType idx, SizeType n)
+{
+    KUN_Assert(isValidIndex(idx));
+    addAtUnsafe(idx, n);
+    for (SizeType i = 0; i < n; ++i) { new (m_data + idx + i) T(); }
+}
+
+// emplace
+template<typename T, typename Alloc> template<typename... Args> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::emplace(Args&&... args)
+{
+    auto old_index = addUnsafe();
+    new (m_data + old_index) T(std::forward<Args>(args)...);
+    return old_index;
+}
+template<typename T, typename Alloc> template<typename... Args> KUN_INLINE void Array<T, Alloc>::emplaceAt(SizeType index, Args&&... args)
+{
+    addAtUnsafe(index);
+    new (m_data + index) T(std::forward<Args>(args)...);
+}
+
+// append
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::append(const Array& arr)
+{
+    if (arr.m_size)
+    {
+        auto old_index = addUnsafe(arr.size());
+        memory::copyItems(m_data + old_index, arr.m_data, arr.m_size);
+        return old_index;
+    }
+    return m_size;
+}
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::append(std::initializer_list<T> init_list)
+{
+    if (init_list.size())
+    {
+        auto old_index = addUnsafe(init_list.size());
+        memory::copyItems(m_data + old_index, init_list.begin(), init_list.size());
+        return old_index;
+    }
+    return m_size;
+}
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::append(T* p, SizeType n)
+{
+    if (n)
+    {
+        auto old_index = addUnsafe(n);
+        memory::copyItems(m_data + old_index, p, n);
+        return old_index;
+    }
+    return m_size;
+}
+
+// append at
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::appendAt(SizeType idx, const Array& arr)
+{
+    KUN_Assert(isValidIndex(idx));
+    if (arr.m_size)
+    {
+        addAtUnsafe(idx, arr.m_size);
+        memory::copyItems(m_data + idx, arr.m_data, arr.m_size);
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::appendAt(SizeType idx, std::initializer_list<T> init_list)
+{
+    KUN_Assert(isValidIndex(idx));
+    if (init_list.size())
+    {
+        addAtUnsafe(idx, init_list.size());
+        memory::copyItems(m_data + idx, init_list.begin(), init_list.size());
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::appendAt(SizeType idx, T* p, SizeType n)
+{
+    KUN_Assert(isValidIndex(idx));
+    if (n)
+    {
+        addAtUnsafe(idx, n);
+        memory::copyItems(m_data + idx, p, n);
+    }
+}
+
+// assign
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(T* p, SizeType n)
+{
+    // clear and resize
+    clear();
+    resizeUnsafe(n);
+
+    // copy items
+    memory::copyItems(m_data, p, n);
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(std::initializer_list<T> init_list) { assign(init_list.begin(), init_list.size()); }
 
 }// namespace kun
