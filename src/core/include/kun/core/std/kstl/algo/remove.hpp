@@ -6,7 +6,6 @@
 
 namespace kun::algo
 {
-template<typename T, typename TP> KUN_INLINE T removeAt(T begin, T end, T remove_begin, T remove_end) {}
 template<typename T, typename TP> KUN_INLINE T removeIf(T begin, T end, TP&& p = TP())
 {
     if (begin < end)

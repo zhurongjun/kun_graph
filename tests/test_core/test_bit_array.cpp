@@ -122,6 +122,10 @@ TEST(TestCore, test_bit_array)
 
         a.release(64);
         ASSERT_GE(a.capacity(), 64);
+
+        a.resizeUnsafe(64);
+        a.resizeUnsafe(16);
+        ASSERT_EQ(a.size(), 16);
     }
 
     // test add

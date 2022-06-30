@@ -70,6 +70,8 @@ public:
     template<typename T> KUN_INLINE T* resizeContainer(T* p, SizeType size, SizeType capacity, SizeType new_capacity)
     {
         KUN_Assert(new_capacity > 0);
+        KUN_Assert(size <= capacity);
+        KUN_Assert((capacity > 0 && p != nullptr) || (capacity == 0 && p == nullptr));
 
         if constexpr (memory::memory_policy_traits<T>::use_realloc)
         {

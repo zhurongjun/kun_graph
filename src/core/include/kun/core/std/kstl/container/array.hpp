@@ -18,7 +18,7 @@ public:
     Array(Alloc alloc = Alloc());
     Array(SizeType size, Alloc alloc = Alloc());
     Array(SizeType size, const T& v, Alloc alloc = Alloc());
-    Array(T* p, SizeType n, Alloc alloc = Alloc());
+    Array(const T* p, SizeType n, Alloc alloc = Alloc());
     Array(std::initializer_list<T> init_list, Alloc alloc = Alloc());
     ~Array();
 
@@ -163,7 +163,7 @@ public:
 private:
     // helper
     void _shink();
-    void _resize(SizeType size);
+    void _resize(SizeType new_capacity);
     void _grow(SizeType n);
 
 private:
@@ -177,5 +177,93 @@ private:
 // Array impl
 namespace kun
 {
-
+// helper
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::_shink()
+{
+    auto new_capacity = m_alloc.getShrink(m_size, m_capacity);
+    if (new_capacity < m_capacity)
+    {
+        m_data = m_alloc.resizeContainer(m_data, m_size, m_capacity, new_capacity);
+        m_capacity = new_capacity;
+    }
 }
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::_resize(SizeType new_capacity)
+{
+    if (new_capacity)
+    {
+        // realloc
+        m_data = m_alloc.resizeContainer(m_data, m_size, m_capacity, new_capacity);
+        m_size = std::min(m_size, m_capacity);
+        m_capacity = new_capacity;
+    }
+    else if (m_data)
+    {
+        // free
+        memory::destructItem(m_data, m_size);
+        m_alloc.free(m_data);
+        m_data = nullptr;
+        m_size = 0;
+        m_capacity = 0;
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::_grow(SizeType n)
+{
+    auto new_size = m_size + n;
+    if (new_size > m_capacity)
+    {
+        auto new_capacity = m_alloc.getGrow(new_size, m_capacity);
+        m_data = m_alloc.resizeContainer(m_data, m_size, m_capacity, new_capacity);
+        m_capacity = new_capacity;
+    }
+}
+
+// ctor & dtor
+template<typename T, typename Alloc>
+KUN_INLINE Array<T, Alloc>::Array(Alloc alloc)
+    : m_data(nullptr)
+    , m_size(0)
+    , m_capacity(0)
+    , m_alloc(std::move(alloc))
+{
+}
+template<typename T, typename Alloc>
+KUN_INLINE Array<T, Alloc>::Array(SizeType size, Alloc alloc)
+    : m_data(nullptr)
+    , m_size(0)
+    , m_capacity(0)
+    , m_alloc(std::move(alloc))
+{
+    resizeDefault(size);
+}
+template<typename T, typename Alloc>
+KUN_INLINE Array<T, Alloc>::Array(SizeType size, const T& v, Alloc alloc)
+    : m_data(nullptr)
+    , m_size(0)
+    , m_capacity(0)
+    , m_alloc(std::move(alloc))
+{
+    resize(size, v);
+}
+template<typename T, typename Alloc>
+KUN_INLINE Array<T, Alloc>::Array(const T* p, SizeType n, Alloc alloc)
+    : m_data(nullptr)
+    , m_size(0)
+    , m_capacity(0)
+    , m_alloc(std::move(alloc))
+{
+    resizeUnsafe(n);
+    memory::copyItems(m_data, p, n);
+}
+template<typename T, typename Alloc>
+KUN_INLINE Array<T, Alloc>::Array(std::initializer_list<T> init_list, Alloc alloc)
+    : m_data(nullptr)
+    , m_size(0)
+    , m_capacity(0)
+    , m_alloc(std::move(alloc))
+{
+    resizeUnsafe(init_list.size());
+    memory::copyItems(m_data, init_list.begin(), init_list.size());
+}
+template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>::~Array() { release(); }
+
+}// namespace kun

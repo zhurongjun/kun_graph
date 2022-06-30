@@ -84,13 +84,13 @@ public:
 private:
     // helper
     void _grow(SizeType size);
-    void _resize(SizeType size);
+    void _resizeMemory(SizeType new_capacity);
 
 private:
     u32*     m_data;
     SizeType m_size;
     SizeType m_capacity;
-    Alloc    m_allocator;
+    Alloc    m_alloc;
 };
 }// namespace kun
 
@@ -106,10 +106,10 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::_grow(SizeType size)
         SizeType old_word_size = algo::calcNumWords(m_size);
         SizeType old_word_capacity = algo::calcNumWords(m_capacity);
         SizeType new_word_size = algo::calcNumWords(m_size + size);
-        SizeType new_word_capacity = m_allocator.getGrow(new_word_size, old_word_capacity);
+        SizeType new_word_capacity = m_alloc.getGrow(new_word_size, old_word_capacity);
 
         // realloc
-        m_data = m_allocator.resizeContainer(m_data, old_word_size, old_word_capacity, new_word_capacity);
+        m_data = m_alloc.resizeContainer(m_data, old_word_size, old_word_capacity, new_word_capacity);
 
         // update capacity
         m_capacity = new_word_capacity << algo::NumBitsPerDWORDLogTwo;
@@ -117,30 +117,32 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::_grow(SizeType size)
     // update size
     m_size += size;
 }
-template<typename Alloc> KUN_INLINE void BitArray<Alloc>::_resize(SizeType size)
+template<typename Alloc> KUN_INLINE void BitArray<Alloc>::_resizeMemory(SizeType new_capacity)
 {
+    SizeType word_size = algo::calcNumWords(m_size);
     SizeType old_word_capacity = algo::calcNumWords(m_capacity);
-    SizeType new_word_capacity = algo::calcNumWords(size);
+    SizeType new_word_capacity = algo::calcNumWords(new_capacity);
 
     if (new_word_capacity)
     {
         // realloc
-        m_data = m_allocator.resizeContainer(m_data, m_size, old_word_capacity, new_word_capacity);
+        m_data = m_alloc.resizeContainer(m_data, word_size, old_word_capacity, new_word_capacity);
 
         // clean new memory
         if (new_word_capacity > old_word_capacity)
             memory::memzero(data() + old_word_capacity, (new_word_capacity - old_word_capacity) * sizeof(u32));
 
-        // change capacity
+        // update size and capacity
+        m_size = std::min(m_size, m_capacity);
         m_capacity = new_word_capacity * algo::NumBitsPerDWORD;
     }
-    else
+    else if (m_data)
     {
         // free
-        m_allocator.free(m_data);
-        m_data = 0;
-        m_capacity = 0;
+        m_alloc.free(m_data);
+        m_data = nullptr;
         m_size = 0;
+        m_capacity = 0;
     }
 }
 
@@ -150,7 +152,7 @@ KUN_INLINE BitArray<Alloc>::BitArray(Alloc alloc)
     : m_data(nullptr)
     , m_size(0)
     , m_capacity(0)
-    , m_allocator(std::move(alloc))
+    , m_alloc(std::move(alloc))
 {
 }
 template<typename Alloc>
@@ -158,7 +160,7 @@ KUN_INLINE BitArray<Alloc>::BitArray(SizeType size, bool v, Alloc alloc)
     : m_data(nullptr)
     , m_size(0)
     , m_capacity(0)
-    , m_allocator(std::move(alloc))
+    , m_alloc(std::move(alloc))
 {
     resize(size, v);
 }
@@ -170,10 +172,10 @@ KUN_INLINE BitArray<Alloc>::BitArray(const BitArray& other, Alloc alloc)
     : m_data(nullptr)
     , m_size(0)
     , m_capacity(0)
-    , m_allocator(std::move(alloc))
+    , m_alloc(std::move(alloc))
 {
     // resize
-    _resize(other.m_capacity);
+    _resizeMemory(other.m_capacity);
 
     // copy
     m_size = other.size();
@@ -185,7 +187,7 @@ KUN_INLINE BitArray<Alloc>::BitArray(BitArray&& other)
     : m_data(other.m_data)
     , m_size(other.m_size)
     , m_capacity(other.m_capacity)
-    , m_allocator(std::move(other.m_allocator))
+    , m_alloc(std::move(other.m_alloc))
 {
     other.m_data = nullptr;
     other.m_size = 0;
@@ -198,7 +200,7 @@ template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(
     if (this == &rhs)
         return *this;
 
-    _resize(rhs.m_size);
+    _resizeMemory(rhs.m_size);
     m_size = rhs.m_size;
     if (m_size)
         memory::memcpy(m_data, rhs.m_data, algo::calcNumWords(m_size) * sizeof(u32));
@@ -213,7 +215,7 @@ template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(
     m_data = rhs.m_data;
     m_size = rhs.m_size;
     m_capacity = rhs.m_capacity;
-    m_allocator = std::move(rhs.m_allocator);
+    m_alloc = std::move(rhs.m_alloc);
 
     // invalidate rhs
     rhs.m_data = nullptr;
@@ -241,8 +243,8 @@ template<typename Alloc> KUN_INLINE u32*                               BitArray<
 template<typename Alloc> KUN_INLINE const u32*                         BitArray<Alloc>::data() const { return m_data; }
 template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::SizeType BitArray<Alloc>::size() const { return m_size; }
 template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::SizeType BitArray<Alloc>::capacity() const { return m_capacity; }
-template<typename Alloc> KUN_INLINE Alloc&                             BitArray<Alloc>::allocator() { return m_allocator; }
-template<typename Alloc> KUN_INLINE const Alloc&                       BitArray<Alloc>::allocator() const { return m_allocator; }
+template<typename Alloc> KUN_INLINE Alloc&                             BitArray<Alloc>::allocator() { return m_alloc; }
+template<typename Alloc> KUN_INLINE const Alloc&                       BitArray<Alloc>::allocator() const { return m_alloc; }
 template<typename Alloc> KUN_INLINE bool                               BitArray<Alloc>::empty() { return m_size == 0; }
 
 // validate
@@ -257,24 +259,24 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::clear()
 template<typename Alloc> KUN_INLINE void BitArray<Alloc>::release(SizeType capacity)
 {
     m_size = 0;
-    _resize(capacity);
+    _resizeMemory(capacity);
 }
 template<typename Alloc> KUN_INLINE void BitArray<Alloc>::reserve(SizeType capacity)
 {
     if (capacity > m_capacity)
-        _resize(capacity);
+        _resizeMemory(capacity);
 }
 template<typename Alloc> KUN_INLINE void BitArray<Alloc>::resize(SizeType size, bool new_value)
 {
-    // set size
-    auto old_size = m_size;
-    m_size = size;
-
     // do resize
     if (size > m_capacity)
     {
-        _resize(size);
+        _resizeMemory(size);
     }
+
+    // set size
+    auto old_size = m_size;
+    m_size = size;
 
     // try init
     if (size > old_size)
@@ -287,7 +289,7 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::resizeUnsafe(SizeType 
     // do resize
     if (size > m_capacity)
     {
-        _resize(size);
+        _resizeMemory(size);
     }
 
     // set size
