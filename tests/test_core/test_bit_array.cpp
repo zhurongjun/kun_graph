@@ -53,7 +53,6 @@ TEST(TestCore, test_bit_array)
 
         b = a;
         ASSERT_EQ(a.size(), b.size());
-        ASSERT_EQ(a.capacity(), b.capacity());
         for (int i = 0; i < 30; ++i) { ASSERT_EQ(a[i], b[i]); }
 
         auto old_data = a.data();

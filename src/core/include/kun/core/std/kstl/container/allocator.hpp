@@ -51,9 +51,9 @@ public:
     // size < capacity, calc shrink
     KUN_INLINE SizeType getShrink(SizeType size, SizeType capacity)
     {
-        SizeType result;
         KUN_Assert(size < capacity);
 
+        SizeType result;
         if ((3 * size < 2 * capacity) && (capacity - size > 64 || !size))
         {
             result = size;

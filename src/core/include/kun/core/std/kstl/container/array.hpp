@@ -162,8 +162,7 @@ public:
 
 private:
     // helper
-    void _shink();
-    void _resize(SizeType new_capacity);
+    void _resizeMemory(SizeType new_capacity);
     void _grow(SizeType n);
 
 private:
@@ -178,16 +177,7 @@ private:
 namespace kun
 {
 // helper
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::_shink()
-{
-    auto new_capacity = m_alloc.getShrink(m_size, m_capacity);
-    if (new_capacity < m_capacity)
-    {
-        m_data = m_alloc.resizeContainer(m_data, m_size, m_capacity, new_capacity);
-        m_capacity = new_capacity;
-    }
-}
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::_resize(SizeType new_capacity)
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::_resizeMemory(SizeType new_capacity)
 {
     if (new_capacity)
     {
@@ -265,5 +255,168 @@ KUN_INLINE Array<T, Alloc>::Array(std::initializer_list<T> init_list, Alloc allo
     memory::copyItems(m_data, init_list.begin(), init_list.size());
 }
 template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>::~Array() { release(); }
+
+// copy & move
+template<typename T, typename Alloc>
+KUN_INLINE Array<T, Alloc>::Array(const Array& other, Alloc alloc)
+    : m_data(nullptr)
+    , m_size(0)
+    , m_capacity(0)
+    , m_alloc(std::move(alloc))
+{
+    resizeUnsafe(other.size());
+    memory::copyItems(m_data, other.data(), other.size());
+}
+template<typename T, typename Alloc>
+KUN_INLINE Array<T, Alloc>::Array(Array&& other)
+    : m_data(other.m_data)
+    , m_size(other.m_size)
+    , m_capacity(other.m_capacity)
+    , m_alloc(std::move(other.m_alloc))
+{
+    other.m_data = nullptr;
+    other.m_size = 0;
+    other.m_capacity = 0;
+}
+
+// assign & move assign
+template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>::operator=(const Array& rhs)
+{
+    if (this != &rhs)
+    {
+        // release and resize
+        release(rhs.m_size);
+        resizeUnsafe(rhs.m_size);
+
+        // copy items
+        memory::copyItems(m_data, rhs.m_data, rhs.m_size);
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>::operator=(Array&& rhs)
+{
+    if (this != &rhs)
+    {
+        // release
+        release();
+
+        // copy data
+        m_data = rhs.m_data;
+        m_size = rhs.m_size;
+        m_capacity = rhs.m_capacity;
+        m_alloc == std::move(rhs.m_alloc);
+
+        // invalidate rhs
+        rhs.m_data = nullptr;
+        rhs.m_size = 0;
+        rhs.capacity = 0;
+    }
+}
+
+// compare
+template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::operator==(const Array& rhs) const
+{
+    return m_size == rhs.m_size && memory::compareItems(m_data, rhs.m_data, m_size);
+}
+template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::operator!=(const Array& rhs) const { return !(*this == rhs); }
+
+// getter
+template<typename T, typename Alloc> KUN_INLINE T*                                 Array<T, Alloc>::data() { return m_data; }
+template<typename T, typename Alloc> KUN_INLINE const T*                           Array<T, Alloc>::data() const { return m_data; }
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::size() const { return m_size; }
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::capacity() const { return m_capacity; }
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::slack() const { return m_capacity - m_size; }
+template<typename T, typename Alloc> KUN_INLINE Alloc&                             Array<T, Alloc>::allocator() { return m_alloc; }
+template<typename T, typename Alloc> KUN_INLINE const Alloc&                       Array<T, Alloc>::allocator() const { return m_alloc; }
+template<typename T, typename Alloc> KUN_INLINE bool                               Array<T, Alloc>::empty() { return m_size == 0; }
+
+// validate
+template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::isValidIndex(SizeType idx) const { return idx > 0 && idx < m_size; }
+template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::isValidPointer(const T* p) const { return p >= begin() && p < end(); }
+
+// memory op
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::clear()
+{
+    if (m_size)
+    {
+        memory::destructItem(m_data, m_size);
+        m_size = 0;
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::release(SizeType capacity)
+{
+    clear();
+    _resizeMemory(capacity);
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::reserve(SizeType capacity)
+{
+    if (capacity > m_capacity)
+    {
+        _resizeMemory(capacity);
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::shrink()
+{
+    auto new_capacity = m_alloc.getShrink(m_size, m_capacity);
+    _resizeMemory(new_capacity);
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resize(SizeType size, const T& new_value)
+{
+    // do unsafe resize
+    auto old_size = m_size;
+    resizeUnsafe(size);
+
+    // add or remove
+    if (size > old_size)
+    {
+        add(new_value, size - old_size);
+    }
+    else if (size < old_size)
+    {
+        removeAt(size, old_size - size);
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeUnsafe(SizeType size)
+{
+    // do memory resize
+    if (m_capacity < size)
+    {
+        _resizeMemory(size);
+    }
+
+    // directly assign
+    m_size = size;
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeZeroed(SizeType size)
+{
+    // do unsafe resize
+    auto old_size = m_size;
+    resizeUnsafe(size);
+
+    // add or remove
+    if (size > old_size)
+    {
+        addZeroed(size - old_size);
+    }
+    else if (size < old_size)
+    {
+        removeAt(size, old_size - size);
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeDefault(SizeType size)
+{
+    // do unsafe resize
+    auto old_size = m_size;
+    resizeUnsafe(size);
+
+    // add or remove
+    if (size > old_size)
+    {
+        addDefault(size - old_size);
+    }
+    else if (size < old_size)
+    {
+        removeAt(size, old_size - size);
+    }
+}
 
 }// namespace kun

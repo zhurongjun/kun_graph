@@ -197,30 +197,35 @@ KUN_INLINE BitArray<Alloc>::BitArray(BitArray&& other)
 // copy & move assign
 template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(const BitArray& rhs)
 {
-    if (this == &rhs)
-        return *this;
+    if (this != &rhs)
+    {
+        _resizeMemory(rhs.m_size);
+        m_size = rhs.m_size;
+        if (m_size)
+            memory::memcpy(m_data, rhs.m_data, algo::calcNumWords(m_size) * sizeof(u32));
+    }
 
-    _resizeMemory(rhs.m_size);
-    m_size = rhs.m_size;
-    if (m_size)
-        memory::memcpy(m_data, rhs.m_data, algo::calcNumWords(m_size) * sizeof(u32));
     return *this;
 }
 template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(BitArray&& rhs)
 {
-    if (this == &rhs)
-        return *this;
+    if (this != &rhs)
+    {
+        // release
+        release();
 
-    // copy data
-    m_data = rhs.m_data;
-    m_size = rhs.m_size;
-    m_capacity = rhs.m_capacity;
-    m_alloc = std::move(rhs.m_alloc);
+        // copy data
+        m_data = rhs.m_data;
+        m_size = rhs.m_size;
+        m_capacity = rhs.m_capacity;
+        m_alloc = std::move(rhs.m_alloc);
 
-    // invalidate rhs
-    rhs.m_data = nullptr;
-    rhs.m_size = 0;
-    rhs.m_capacity = 0;
+        // invalidate rhs
+        rhs.m_data = nullptr;
+        rhs.m_size = 0;
+        rhs.m_capacity = 0;
+    }
+
     return *this;
 }
 
