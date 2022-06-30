@@ -16,7 +16,7 @@ public:
 
     // ctor & dtor
     Array(Alloc alloc = Alloc());
-    Array(SizeType size, Alloc alloc = Alloc);
+    Array(SizeType size, Alloc alloc = Alloc());
     Array(SizeType size, const T& v, Alloc alloc = Alloc());
     Array(T* p, SizeType n, Alloc alloc = Alloc());
     Array(std::initializer_list<T> init_list, Alloc alloc = Alloc());
@@ -45,8 +45,8 @@ public:
     bool         empty();
 
     // validate
-    bool isValidIndex(SizeType idx);
-    bool isValidPointer(const T* p);
+    bool isValidIndex(SizeType idx) const;
+    bool isValidPointer(const T* p) const;
 
     // memory op
     void clear();
