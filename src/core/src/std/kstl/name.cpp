@@ -10,9 +10,9 @@ namespace kun
 static inline constexpr Size NAME_PAGE_SIZE = 4 * 1024;
 
 // name pages
-static Array<UPtr<char>>& namePages()
+static eastl::vector<UPtr<char>>& namePages()
 {
-    static Array<UPtr<char>> instance;
+    static eastl::vector<UPtr<char>> instance;
     return instance;
 }
 

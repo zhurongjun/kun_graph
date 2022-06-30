@@ -75,6 +75,18 @@ TEST(TestCore, test_bit_array)
         ASSERT_NE(a, c);
     }
 
+    // [needn't test] getter
+
+    // test validate
+    {
+        BitArray a(30, true);
+        ASSERT_TRUE(a.isValidIndex(0));
+        ASSERT_TRUE(a.isValidIndex(15));
+        ASSERT_TRUE(a.isValidIndex(29));
+        ASSERT_FALSE(a.isValidIndex(-1));
+        ASSERT_FALSE(a.isValidIndex(39));
+    }
+
     // test memory op
     {
         BitArray a(30, true);
@@ -194,16 +206,6 @@ TEST(TestCore, test_bit_array)
     }
 
     // [included in above tests] setRange()
-
-    // test validate
-    {
-        BitArray a(30, true);
-        ASSERT_TRUE(a.isValidIndex(0));
-        ASSERT_TRUE(a.isValidIndex(15));
-        ASSERT_TRUE(a.isValidIndex(29));
-        ASSERT_FALSE(a.isValidIndex(-1));
-        ASSERT_FALSE(a.isValidIndex(39));
-    }
 
     // test true it
     {

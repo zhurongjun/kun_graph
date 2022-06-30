@@ -6,7 +6,7 @@
 #include "bit_iterator.hpp"
 #include "fwd.hpp"
 
-// bit array def
+// BitArray def
 namespace kun
 {
 template<typename Alloc> class BitArray final
@@ -43,6 +43,9 @@ public:
     const Alloc& allocator() const;
     bool         empty();
 
+    // validate
+    bool isValidIndex(SizeType idx);
+
     // memory op
     void clear();
     void release(SizeType capacity = 0);
@@ -72,9 +75,6 @@ public:
     // set range
     void setRange(SizeType start, SizeType n, bool v);
 
-    // validate
-    bool isValidIndex(SizeType idx);
-
     // support foreach
     BitIt<SizeType, false> begin();
     BitIt<SizeType, false> end();
@@ -94,7 +94,7 @@ private:
 };
 }// namespace kun
 
-// bit array impl
+// BitArray impl
 namespace kun
 {
 // helper
@@ -245,6 +245,9 @@ template<typename Alloc> KUN_INLINE Alloc&                             BitArray<
 template<typename Alloc> KUN_INLINE const Alloc&                       BitArray<Alloc>::allocator() const { return m_allocator; }
 template<typename Alloc> KUN_INLINE bool                               BitArray<Alloc>::empty() { return m_size == 0; }
 
+// validate
+template<typename Alloc> KUN_INLINE bool BitArray<Alloc>::isValidIndex(SizeType idx) { return idx >= 0 && idx < m_size; }
+
 // memory op
 template<typename Alloc> KUN_INLINE void BitArray<Alloc>::clear()
 {
@@ -376,9 +379,6 @@ template<typename Alloc> KUN_INLINE void BitArray<Alloc>::setRange(SizeType star
     KUN_Assert(start >= 0 && n > 0 && start + n <= m_size);
     algo::setBitRange(m_data, start, n, v);
 }
-
-// validate
-template<typename Alloc> KUN_INLINE bool BitArray<Alloc>::isValidIndex(SizeType idx) { return idx >= 0 && idx < m_size; }
 
 // support foreach
 template<typename Alloc> KUN_INLINE typename BitArray<Alloc>::It  BitArray<Alloc>::begin() { return It(*this); }

@@ -13,7 +13,7 @@
 namespace kun
 {
 // containers
-template<typename T> using Array = eastl::vector<T>;
+// template<typename T> using Array = eastl::vector<T>;
 template<typename T> using USet = eastl::unordered_set<T, Hash<T>>;
 template<typename K, typename V> using UMap = eastl::unordered_map<K, V, Hash<K>>;
 

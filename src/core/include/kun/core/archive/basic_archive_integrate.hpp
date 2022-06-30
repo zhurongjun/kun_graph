@@ -40,7 +40,7 @@ template<typename T, typename ElemPolicy> struct SerArray
 {
     static void defaultPolicy(Archive& ar, T& v) { ar& NamedValue<T>(v); }
 
-    KUN_INLINE SerArray(Array<T>& arr, ElemPolicy& policy = &defaultPolicy)
+    KUN_INLINE SerArray(eastl::vector<T>& arr, ElemPolicy& policy = &defaultPolicy)
         : m_arr(arr)
         , m_policy(std::forward<ElemPolicy>(policy))
     {
@@ -67,7 +67,7 @@ template<typename T, typename ElemPolicy> struct SerArray
     }
 
 private:
-    Array<T>& m_arr;
+    eastl::vector<T>& m_arr;
     ElemPolicy& m_policy;
 };
 
