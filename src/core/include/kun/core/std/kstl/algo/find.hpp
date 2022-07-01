@@ -5,21 +5,21 @@
 
 namespace kun::algo
 {
-template<typename T, typename TF, typename TP = Equal<>> KUN_INLINE T find(T begin, T end, const TF& v, TP&& p = TP())
+template<typename T, typename TF, typename TP = Equal<>> KUN_INLINE T find(T begin, T end, TP&& p = TP())
 {
     for (; begin != end; ++begin)
     {
-        if (p(*begin, v))
+        if (p(*begin))
             return begin;
     }
     return end;
 }
 
-template<typename T, typename TF, typename TP = Equal<>> KUN_INLINE T findLast(T begin, T end, const TF& v, TP&& p = TP())
+template<typename T, typename TF, typename TP = Equal<>> KUN_INLINE T findLast(T begin, T end, TP&& p = TP())
 {
     for (; begin != end; --end)
     {
-        if (p(*end, v))
+        if (p(*end))
             return end;
     }
     return end;

@@ -7,9 +7,9 @@
 namespace kun::algo
 {
 // heap jump tools
-template<typename T> KUN_INLINE constexpr T heapLChildIdx(T index) { return index * 2 + 1; }
-template<typename T> KUN_INLINE constexpr T heapRChildIdx(T index) { return heapLChildIdx(index) + 1; }
-template<typename T> KUN_INLINE constexpr T heapParentIdx(T index) { return index ? (index - 1) / 2 : 0; }
+template<typename T> KUN_INLINE constexpr T    heapLChildIdx(T index) { return index * 2 + 1; }
+template<typename T> KUN_INLINE constexpr T    heapRChildIdx(T index) { return heapLChildIdx(index) + 1; }
+template<typename T> KUN_INLINE constexpr T    heapParentIdx(T index) { return index ? (index - 1) / 2 : 0; }
 template<typename T> KUN_INLINE constexpr bool heapIsLeaf(T index, T count) { return heapLChildIdx(index) >= count; }
 
 // sift down

@@ -47,4 +47,37 @@ template<typename T, typename TP> KUN_INLINE T removeIf(T begin, T end, TP&& p =
     }
     return end;
 }
+template<typename T, typename TP> KUN_INLINE T removeIfSwap(T begin, T end, TP&& p = TP())
+{
+    while (begin < end)
+    {
+        // skip items that needn't remove on header
+        while (begin < end)
+        {
+            if (p(*begin))
+            {
+                break;
+            }
+            ++begin;
+        }
+
+        // skip items that need remove on tail
+        while (begin < end)
+        {
+            if (!p(*end))
+            {
+                break;
+            }
+            --end;
+        }
+
+        // swap
+        ::kun::swap(*begin, *end);
+
+        // update iterator
+        ++begin;
+        --end;
+    }
+    return begin;
+}
 }// namespace kun::algo
