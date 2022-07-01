@@ -11,10 +11,11 @@
 namespace kun
 {
 // TODO. consider support range
+// TODO. consider support span
 template<typename T, typename Alloc> class Array
 {
 public:
-    using SizeType = typename Alloc::USizeType;
+    using SizeType = typename Alloc::SizeType;
 
     // ctor & dtor
     Array(Alloc alloc = Alloc());
@@ -57,23 +58,21 @@ public:
     void shrink();
     void resize(SizeType size, const T& new_value);
     void resizeUnsafe(SizeType size);
-    void resizeZeroed(SizeType size);
     void resizeDefault(SizeType size);
+    void resizeZeroed(SizeType size);
 
     // add
-    SizeType add(T&& v);
     SizeType add(const T& v, SizeType n = 1);
     SizeType addUnique(const T& v);
     SizeType addUnsafe(SizeType n = 1);
-    SizeType addZeroed(SizeType n = 1);
     SizeType addDefault(SizeType n = 1);
+    SizeType addZeroed(SizeType n = 1);
 
     // add at
-    void addAt(SizeType idx, T&& v);
     void addAt(SizeType idx, const T& v, SizeType n = 1);
     void addAtUnsafe(SizeType idx, SizeType n = 1);
-    void addAtZeroed(SizeType idx, SizeType n = 1);
     void addAtDefault(SizeType idx, SizeType n = 1);
+    void addAtZeroed(SizeType idx, SizeType n = 1);
 
     // emplace
     template<typename... Args> SizeType emplace(Args&&... args);
@@ -90,18 +89,18 @@ public:
     void appendAt(SizeType idx, T* p, SizeType n);
 
     // assign
-    void assign(T* p, SizeType n);
+    void assign(const T* p, SizeType n);
     void assign(std::initializer_list<T> init_list);
 
     // remove
-    void     removeAt(SizeType index, SizeType n = 1);
-    void     removeAtSwap(SizeType index, SizeType n = 1);
-    SizeType remove(const T& v);
-    SizeType removeSwap(const T& v);
-    SizeType removeLast(const T& v);
-    SizeType removeLastSwap(const T& v);
-    SizeType removeAll(const T& v);
-    SizeType removeAllSwap(const T& v);
+    void                           removeAt(SizeType index, SizeType n = 1);
+    void                           removeAtSwap(SizeType index, SizeType n = 1);
+    template<typename TK> SizeType remove(const TK& v);
+    template<typename TK> SizeType removeSwap(const TK& v);
+    template<typename TK> SizeType removeLast(const TK& v);
+    template<typename TK> SizeType removeLastSwap(const TK& v);
+    template<typename TK> SizeType removeAll(const TK& v);
+    template<typename TK> SizeType removeAllSwap(const TK& v);
 
     // remove if
     template<typename TP> SizeType removeIf(TP&& p);
@@ -116,10 +115,10 @@ public:
     const T& operator[](SizeType index) const;
 
     // find
-    T*       find(const T& v);
-    T*       findLast(const T& v);
-    const T* find(const T& v) const;
-    const T* findLast(const T& v) const;
+    template<typename TK> T*       find(const TK& v);
+    template<typename TK> T*       findLast(const TK& v);
+    template<typename TK> const T* find(const TK& v) const;
+    template<typename TK> const T* findLast(const TK& v) const;
 
     // find if
     template<typename TP> T*       findIf(TP&& p);
@@ -144,7 +143,7 @@ public:
     template<typename TP = Less<T>> SizeType heapPush(T&& v, TP&& p = TP());
     template<typename TP = Less<T>> SizeType heapPush(const T& v, TP&& p = TP());
     template<typename TP = Less<T>> void     heapPop(TP&& p = TP());
-    template<typename TP = Less<T>> T        heapPopGet(T& out, TP&& p = TP());
+    template<typename TP = Less<T>> T        heapPopGet(TP&& p = TP());
     template<typename TP = Less<T>> void     heapRemoveAt(SizeType index, TP&& p = TP());
     template<typename TP = Less<T>> void     heapSort(TP&& p = TP());
 
@@ -300,6 +299,7 @@ template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>
         // copy items
         memory::copyItems(m_data, rhs.m_data, rhs.m_size);
     }
+    return *this;
 }
 template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>::operator=(Array&& rhs)
 {
@@ -312,13 +312,14 @@ template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>
         m_data = rhs.m_data;
         m_size = rhs.m_size;
         m_capacity = rhs.m_capacity;
-        m_alloc == std::move(rhs.m_alloc);
+        m_alloc = std::move(rhs.m_alloc);
 
         // invalidate rhs
         rhs.m_data = nullptr;
         rhs.m_size = 0;
-        rhs.capacity = 0;
+        rhs.m_capacity = 0;
     }
+    return *this;
 }
 
 // compare
@@ -385,6 +386,9 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resize(Siz
     {
         removeAt(size, m_size - size);
     }
+
+    // set size
+    m_size = size;
 }
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeUnsafe(SizeType size)
 {
@@ -403,24 +407,9 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeUnsa
     {
         removeAt(size, m_size - size);
     }
-}
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeZeroed(SizeType size)
-{
-    // explicit size
-    if (size > m_capacity)
-    {
-        _resizeMemory(size);
-    }
 
-    // add or remove
-    if (size > m_size)
-    {
-        addZeroed(size - m_size);
-    }
-    else if (size < m_size)
-    {
-        removeAt(size, m_size - size);
-    }
+    // set size
+    m_size = size;
 }
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeDefault(SizeType size)
 {
@@ -439,15 +428,33 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeDefa
     {
         removeAt(size, m_size - size);
     }
+
+    // set size
+    m_size = size;
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::resizeZeroed(SizeType size)
+{
+    // explicit size
+    if (size > m_capacity)
+    {
+        _resizeMemory(size);
+    }
+
+    // add or remove
+    if (size > m_size)
+    {
+        addZeroed(size - m_size);
+    }
+    else if (size < m_size)
+    {
+        removeAt(size, m_size - size);
+    }
+
+    // set size
+    m_size = size;
 }
 
 // add
-template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::add(T&& v)
-{
-    auto old_size = addUnsafe();
-    new (m_data + old_size) T(std::move(v));
-    return old_size;
-}
 template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::add(const T& v, SizeType n)
 {
     auto old_size = addUnsafe(n);
@@ -467,8 +474,14 @@ template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeTy
 }
 template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addUnsafe(SizeType n)
 {
-    _grow(n);
     auto old_size = m_size;
+    _grow(n);
+    return old_size;
+}
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addDefault(SizeType n)
+{
+    auto old_size = addUnsafe(n);
+    for (SizeType i = old_size; i < m_size; ++i) { new (m_data + i) T(); }
     return old_size;
 }
 template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addZeroed(SizeType n)
@@ -477,19 +490,8 @@ template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeTy
     memory::memzero(m_data + old_size, n * sizeof(T));
     return old_size;
 }
-template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addDefault(SizeType n)
-{
-    auto old_size = addUnsafe(n);
-    for (SizeType i = old_size; i < m_size; ++i) { new (m_data + i) T(); }
-}
 
 // add at
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAt(SizeType idx, T&& v)
-{
-    KUN_Assert(isValidIndex(idx));
-    addAtUnsafe(idx);
-    new (m_data + idx) T(std::move(v));
-}
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAt(SizeType idx, const T& v, SizeType n)
 {
     KUN_Assert(isValidIndex(idx));
@@ -499,20 +501,21 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAt(Size
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAtUnsafe(SizeType idx, SizeType n)
 {
     KUN_Assert(isValidIndex(idx));
+    auto move_n = m_size - idx;
     _grow(n);
-    memory::moveItems(m_data + idx + n, m_data + idx, m_size - idx - 1);
-}
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAtZeroed(SizeType idx, SizeType n)
-{
-    KUN_Assert(isValidIndex(idx));
-    addAtUnsafe(idx, n);
-    memory::memzero(m_data + idx, n * sizeof(T));
+    memory::moveItems(m_data + idx + n, m_data + idx, move_n);
 }
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAtDefault(SizeType idx, SizeType n)
 {
     KUN_Assert(isValidIndex(idx));
     addAtUnsafe(idx, n);
     for (SizeType i = 0; i < n; ++i) { new (m_data + idx + i) T(); }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAtZeroed(SizeType idx, SizeType n)
+{
+    KUN_Assert(isValidIndex(idx));
+    addAtUnsafe(idx, n);
+    memory::memzero(m_data + idx, n * sizeof(T));
 }
 
 // emplace
@@ -590,7 +593,7 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::appendAt(S
 }
 
 // assign
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(T* p, SizeType n)
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(const T* p, SizeType n)
 {
     // clear and resize
     clear();
@@ -607,7 +610,7 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(std
 // remove
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::removeAt(SizeType index, SizeType n)
 {
-    KUN_Assert(index >= 0 && index + n < m_size);
+    KUN_Assert(index >= 0 && index + n <= m_size);
 
     if (n)
     {
@@ -629,7 +632,7 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::removeAt(S
 }
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::removeAtSwap(SizeType index, SizeType n)
 {
-    KUN_Assert(index >= 0 && index + n < m_size);
+    KUN_Assert(index >= 0 && index + n <= m_size);
     if (n)
     {
         // calc move size
@@ -648,7 +651,7 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::removeAtSw
         m_size -= n;
     }
 }
-template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::remove(const T& v)
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::remove(const TK& v)
 {
     if (auto p = find(v))
     {
@@ -658,7 +661,7 @@ template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeTy
     }
     return npos;
 }
-template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeSwap(const T& v)
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeSwap(const TK& v)
 {
     if (auto p = find(v))
     {
@@ -668,7 +671,7 @@ template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeTy
     }
     return npos;
 }
-template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeLast(const T& v)
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeLast(const TK& v)
 {
     if (auto p = findLast(v))
     {
@@ -678,7 +681,7 @@ template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeTy
     }
     return npos;
 }
-template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeLastSwap(const T& v)
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeLastSwap(const TK& v)
 {
     if (auto p = findLast(v))
     {
@@ -688,13 +691,13 @@ template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeTy
     }
     return npos;
 }
-template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeAll(const T& v)
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeAll(const TK& v)
 {
-    removeAllIf([&v](const T& a) { return a == v; });
+    return removeAllIf([&v](const T& a) { return a == v; });
 }
-template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeAllSwap(const T& v)
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::removeAllSwap(const TK& v)
 {
-    removeAllIfSwap([&v](const T& a) { return a == v; });
+    return removeAllIfSwap([&v](const T& a) { return a == v; });
 }
 
 // remove by
@@ -765,28 +768,28 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE typename A
 template<typename T, typename Alloc> KUN_INLINE T& Array<T, Alloc>::operator[](SizeType index)
 {
     KUN_Assert(isValidIndex(index));
-    return *(m_size + index);
+    return *(m_data + index);
 }
 template<typename T, typename Alloc> KUN_INLINE const T& Array<T, Alloc>::operator[](SizeType index) const
 {
     KUN_Assert(isValidIndex(index));
-    return *(m_size + index);
+    return *(m_data + index);
 }
 
 // find
-template<typename T, typename Alloc> KUN_INLINE T* Array<T, Alloc>::find(const T& v)
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE T* Array<T, Alloc>::find(const TK& v)
 {
     return findIf([&v](const T& a) { return a == v; });
 }
-template<typename T, typename Alloc> KUN_INLINE T* Array<T, Alloc>::findLast(const T& v)
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE T* Array<T, Alloc>::findLast(const TK& v)
 {
     return findLastIf([&v](const T& a) { return a == v; });
 }
-template<typename T, typename Alloc> KUN_INLINE const T* Array<T, Alloc>::find(const T& v) const
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE const T* Array<T, Alloc>::find(const TK& v) const
 {
     return findIf([&v](const T& a) { return a == v; });
 }
-template<typename T, typename Alloc> KUN_INLINE const T* Array<T, Alloc>::findLast(const T& v) const
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE const T* Array<T, Alloc>::findLast(const TK& v) const
 {
     return findLastIf([&v](const T& a) { return a == v; });
 }
@@ -829,7 +832,7 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Array
 }
 
 // support heap
-template<typename T, typename Alloc> KUN_INLINE T&                         Array<T, Alloc>::heapTop() { return top(); }
+template<typename T, typename Alloc> KUN_INLINE T&                         Array<T, Alloc>::heapTop() { return *m_data; }
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Array<T, Alloc>::heapify(TP&& p)
 {
     algo::heapify(m_data, m_size, std::forward<TP>(p));
@@ -840,20 +843,20 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE bool Array
 }
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::heapPush(T&& v, TP&& p)
 {
-    auto idx = add(std::move(v));
-    return algo::heapSiftUp(m_data, 0, idx, std::forward<TP>(p));
+    auto idx = emplace(std::move(v));
+    return algo::heapSiftUp(m_data, (SizeType)0, idx, std::forward<TP>(p));
 }
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::heapPush(const T& v, TP&& p)
 {
     auto idx = add(v);
-    return algo::heapSiftUp(m_data, 0, idx, std::forward<TP>(p));
+    return algo::heapSiftUp(m_data, (SizeType)0, idx, std::forward<TP>(p));
 }
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Array<T, Alloc>::heapPop(TP&& p)
 {
     removeAtSwap(0);
-    algo::heapSiftDown(m_data, 0, m_size, std::forward<TP>(p));
+    algo::heapSiftDown(m_data, (SizeType)0, m_size, std::forward<TP>(p));
 }
-template<typename T, typename Alloc> template<typename TP> KUN_INLINE T Array<T, Alloc>::heapPopGet(T& out, TP&& p)
+template<typename T, typename Alloc> template<typename TP> KUN_INLINE T Array<T, Alloc>::heapPopGet(TP&& p)
 {
     T result = std::move(*m_data);
     heapPop(std::forward<TP>(p));
@@ -864,7 +867,7 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Array
     removeAtSwap(index);
 
     algo::heapSiftDown(m_data, index, m_size, std::forward<TP>(p));
-    algo::heapSiftUp(m_data, 0, std::min(index, m_size - 1), std::forward<TP>(p));
+    algo::heapSiftUp(m_data, (SizeType)0, std::min(index, m_size - 1), std::forward<TP>(p));
 }
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Array<T, Alloc>::heapSort(TP&& p)
 {
@@ -880,7 +883,7 @@ template<typename T, typename Alloc> KUN_INLINE T    Array<T, Alloc>::popGet()
     return result;
 }
 template<typename T, typename Alloc> KUN_INLINE void     Array<T, Alloc>::push(const T& v) { add(v); }
-template<typename T, typename Alloc> KUN_INLINE void     Array<T, Alloc>::push(T&& v) { add(std::move(v)); }
+template<typename T, typename Alloc> KUN_INLINE void     Array<T, Alloc>::push(T&& v) { emplace(std::move(v)); }
 template<typename T, typename Alloc> KUN_INLINE T&       Array<T, Alloc>::top() { return *(m_data + m_size - 1); }
 template<typename T, typename Alloc> KUN_INLINE const T& Array<T, Alloc>::top() const { return *(m_data + m_size - 1); }
 template<typename T, typename Alloc> KUN_INLINE T&       Array<T, Alloc>::bottom() { return *m_data; }

@@ -12,7 +12,7 @@ template<typename T, typename TP> KUN_INLINE T removeIf(T begin, T end, TP&& p =
     {
         auto write = begin;
         auto read = begin;
-        bool do_remove = !p(*read);
+        bool do_remove = p(*read);
 
         do {
             auto run_start = read;
@@ -34,8 +34,7 @@ template<typename T, typename TP> KUN_INLINE T removeIf(T begin, T end, TP&& p =
                 // move item
                 if (write != begin)
                 {
-                    // copy items
-                    ::kun::memory::copyItems(write, run_start, run_len);
+                    ::kun::memory::moveItems(write, run_start, run_len);
                 }
                 write += run_len;
             }
@@ -49,11 +48,17 @@ template<typename T, typename TP> KUN_INLINE T removeIf(T begin, T end, TP&& p =
 }
 template<typename T, typename TP> KUN_INLINE T removeIfSwap(T begin, T end, TP&& p = TP())
 {
-    while (begin < end)
+    --end;
+
+    while (true)
     {
         // skip items that needn't remove on header
-        while (begin < end)
+        while (true)
         {
+            if (begin > end)
+            {
+                return begin;
+            }
             if (p(*begin))
             {
                 break;
@@ -62,8 +67,12 @@ template<typename T, typename TP> KUN_INLINE T removeIfSwap(T begin, T end, TP&&
         }
 
         // skip items that need remove on tail
-        while (begin < end)
+        while (true)
         {
+            if (begin > end)
+            {
+                return begin;
+            }
             if (!p(*end))
             {
                 break;
@@ -78,6 +87,5 @@ template<typename T, typename TP> KUN_INLINE T removeIfSwap(T begin, T end, TP&&
         ++begin;
         --end;
     }
-    return begin;
 }
 }// namespace kun::algo

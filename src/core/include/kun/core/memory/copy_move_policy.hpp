@@ -139,12 +139,28 @@ template<typename Dst, typename Src> KUN_INLINE void moveItems(Dst* dst, Src* sr
 {
     if constexpr (memory_policy_traits<Dst, Src>::call_move)
     {
-        while (count)
+        if (dst < src)
         {
-            new (dst) Dst(std::move(*src));
-            ++dst;
-            ++src;
-            --count;
+            while (count)
+            {
+                new (dst) Dst(std::move(*src));
+                ++dst;
+                ++src;
+                --count;
+            }
+        }
+        else if (dst > src)
+        {
+            auto dst_end = dst + count;
+            auto src_end = src + count;
+
+            while (count)
+            {
+                new (dst_end) Dst(std::move(*src_end));
+                --dst_end;
+                --src_end;
+                --count;
+            }
         }
     }
     else
@@ -156,12 +172,28 @@ template<typename Dst, typename Src> KUN_INLINE void moveAssignItems(Dst* dst, S
 {
     if constexpr (memory_policy_traits<Dst, Src>::call_move_assign)
     {
-        while (count)
+        if (dst < src)
         {
-            *dst = std::move(*src);
-            ++dst;
-            ++src;
-            --count;
+            while (count)
+            {
+                *dst = std::move(*src);
+                ++dst;
+                ++src;
+                --count;
+            }
+        }
+        else if (dst > src)
+        {
+            auto dst_end = dst + count;
+            auto src_end = src + count;
+
+            while (count)
+            {
+                *dst_end = std::move(*src_end);
+                --dst_end;
+                --src_end;
+                --count;
+            }
         }
     }
     else

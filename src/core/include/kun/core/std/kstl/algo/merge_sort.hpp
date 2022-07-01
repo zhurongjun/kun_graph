@@ -3,6 +3,7 @@
 #include "kun/core/std/types.hpp"
 #include "kun/core/std/kstl/basic.hpp"
 #include "binarySearch.hpp"
+#include "rotate.hpp"
 
 // merge sort help
 namespace kun::algo::__help

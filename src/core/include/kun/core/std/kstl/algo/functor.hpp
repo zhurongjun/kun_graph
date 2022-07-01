@@ -11,14 +11,14 @@ namespace kun
     {                                                                                                                                                \
         KUN_INLINE constexpr bool operator()(const T& a, const T& b) const                                                                           \
         {                                                                                                                                            \
-            return a < b;                                                                                                                            \
+            return a op b;                                                                                                                            \
         }                                                                                                                                            \
     };                                                                                                                                               \
     template<> struct name<void>                                                                                                                     \
     {                                                                                                                                                \
         template<typename A, typename B> KUN_INLINE constexpr bool operator()(A&& a, B&& b) const                                                    \
         {                                                                                                                                            \
-            return std::forward<A>(a) < std::forward<B>(b);                                                                                          \
+            return std::forward<A>(a) op std::forward<B>(b);                                                                                          \
         }                                                                                                                                            \
     };
 
