@@ -11,7 +11,6 @@
 namespace kun
 {
 // TODO. consider support range
-// TODO. consider support span
 template<typename T, typename Alloc> class Array
 {
 public:
@@ -127,9 +126,7 @@ public:
     template<typename TP> const T* findLastIf(TP&& p) const;
 
     // contain
-    bool contain(const T& v) const;
-
-    // contain if
+    template<typename TK> bool contain(const TK& v) const;
     template<typename TP> bool containIf(TP&& p) const;
 
     // sort
@@ -813,9 +810,7 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE const T* A
 }
 
 // contain
-template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::contain(const T& v) const { return find(v); }
-
-// contain if
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE bool Array<T, Alloc>::contain(const TK& v) const { return find(v); }
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE bool Array<T, Alloc>::containIf(TP&& p) const
 {
     return findIf(std::forward<TP>(p));
