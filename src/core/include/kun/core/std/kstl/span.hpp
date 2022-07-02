@@ -28,6 +28,7 @@ public:
     // getter
     T*   data() const;
     Size size() const;
+    bool empty() const;
 
     // validate
     bool isValidIndex(Size idx) const;
@@ -81,6 +82,7 @@ KUN_INLINE Span<T>::Span(T* p, Size len)
     : m_data(p)
     , m_size(len)
 {
+    KUN_Assert((p == nullptr && len == 0) || (p != nullptr && len != 0));
 }
 template<typename T>
 template<Size N>
@@ -104,6 +106,7 @@ template<typename T> KUN_INLINE bool Span<T>::operator!=(const Span& rhs) const 
 // getter
 template<typename T> KUN_INLINE T*   Span<T>::data() const { return m_data; }
 template<typename T> KUN_INLINE Size Span<T>::size() const { return m_size; }
+template<typename T> KUN_INLINE bool Span<T>::empty() const { return m_size == 0; }
 
 // validate
 template<typename T> KUN_INLINE bool Span<T>::isValidIndex(Size idx) const { return idx >= 0 && idx < m_size; }
