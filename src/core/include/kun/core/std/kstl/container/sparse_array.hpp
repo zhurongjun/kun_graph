@@ -163,3 +163,77 @@ private:
     Array<DataType> m_data;
 };
 }// namespace kun
+
+// SparseArray impl
+namespace kun
+{
+// helper
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_setBit(SizeType index, bool v) { algo::setBit(m_bit_array, index, v); }
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::_getBit(SizeType index) { return algo::getBit(m_bit_array, index); }
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_setBitRange(SizeType start, SizeType n, bool v)
+{
+    algo::setBitRange(m_data, start, n, v);
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_resizeBitArray()
+{
+    SizeType data_word_size = algo::calcNumWords(m_data.size());
+    SizeType old_word_size = algo::calcNumWords(m_bit_array_size);
+
+    if (data_word_size != old_word_size)
+    {
+        if (data_word_size > 0)
+        {
+            auto&    alloc = m_data.allocator();
+            SizeType new_word_size = data_word_size;
+
+            // resize
+            alloc.resizeContainer(m_bit_array, old_word_size, old_word_size, new_word_size);
+
+            // clean memory
+            if (data_word_size > old_word_size)
+            {
+                algo::setWords(m_bit_array + old_word_size, new_word_size - old_word_size);
+            }
+
+            // update size
+            m_bit_array_size = new_word_size;
+        }
+        else
+        {
+            _freeBitArray();
+        }
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_growBitArray()
+{
+    if (m_bit_array_size < m_data.size())
+    {
+        // calc grow size
+        auto&    alloc = m_data.allocator();
+        SizeType data_word_size = algo::calcNumWords(m_data.size());
+        SizeType old_word_size = algo::calcNumWords(m_bit_array_size);
+        SizeType new_word_size = alloc.getGrow(data_word_size, old_word_size);
+
+        // alloc memory and clean
+        if (new_word_size > old_word_size)
+        {
+            // alloc
+            alloc.resizeContainer(m_bit_array, old_word_size, old_word_size, new_word_size);
+
+            // clean
+            algo::setWords(m_bit_array + old_word_size, new_word_size - old_word_size);
+
+            // update size
+            m_bit_array_size = new_word_size * algo::NumBitsPerDWORD;
+        }
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_freeBitArray()
+{
+    if (m_bit_array)
+    {
+        m_data.allocator().free(m_bit_array);
+        m_bit_array_size = 0;
+    }
+}
+}// namespace kun
