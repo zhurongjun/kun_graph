@@ -10,14 +10,17 @@ namespace kun
 // data def
 template<typename T, typename TS> union SparseArrayData
 {
+    // free linked list
     struct
     {
         TS prev;
         TS next;
     };
+
+    // data
     T data;
 };
-// SparseArray data inf
+// data info
 template<typename T, typename TS> struct SparseArrayDataInfo
 {
     T* data;
@@ -234,7 +237,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
         m_capacity = new_capacity;
 
         // resize bit array
-        SizeType data_word_size = algo::calcNumWords(m_size);
+        SizeType data_word_size = algo::calcNumWords(m_capacity);
         SizeType old_word_size = algo::calcNumWords(m_bit_array_size);
         if (data_word_size != old_word_size)
         {
@@ -250,7 +253,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
             }
 
             // update size
-            m_bit_array_size = new_word_size;
+            m_bit_array_size = new_word_size * algo::NumBitsPerDWORD;
         }
     }
     else if (m_data)
@@ -330,10 +333,10 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
         }
 
         // grow bit array
-        if (m_bit_array_size < m_size)
+        if (m_bit_array_size < m_capacity)
         {
             // calc grow size
-            SizeType data_word_size = algo::calcNumWords(m_size);
+            SizeType data_word_size = algo::calcNumWords(m_capacity);
             SizeType old_word_size = algo::calcNumWords(m_bit_array_size);
             SizeType new_word_size = m_alloc.getGrow(data_word_size, old_word_size);
 
@@ -353,4 +356,123 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
     }
 }
 
+// ctor & dtor
+template<typename T, typename Alloc>
+KUN_INLINE SparseArray<T, Alloc>::SparseArray(Alloc alloc)
+    : m_bit_array(nullptr)
+    , m_bit_array_size(0)
+    , m_num_hole(0)
+    , m_first_hole(npos)
+    , m_size(0)
+    , m_capacity(0)
+    , m_data(nullptr)
+    , m_alloc(std::move(alloc))
+{
+}
+template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>::~SparseArray() { release(); }
+
+// copy & move
+template<typename T, typename Alloc>
+KUN_INLINE SparseArray<T, Alloc>::SparseArray(const SparseArray& other, Alloc alloc)
+    : m_bit_array(nullptr)
+    , m_bit_array_size(0)
+    , m_num_hole(0)
+    , m_first_hole(npos)
+    , m_size(0)
+    , m_capacity(0)
+    , m_data(nullptr)
+    , m_alloc(std::move(alloc))
+{
+    (*this) = other;
+}
+template<typename T, typename Alloc>
+KUN_INLINE SparseArray<T, Alloc>::SparseArray(SparseArray&& other)
+    : m_bit_array(other.m_bit_array)
+    , m_bit_array_size(other.m_bit_array_size)
+    , m_num_hole(other.m_num_hole)
+    , m_first_hole(other.m_first_hole)
+    , m_size(other.m_size)
+    , m_capacity(other.m_capacity)
+    , m_data(other.m_data)
+    , m_alloc(std::move(other.m_alloc))
+{
+    other.m_bit_array = nullptr;
+    other.m_bit_array_size = 0;
+    other.m_num_hole = 0;
+    other.m_first_hole = npos;
+    other.m_size = 0;
+    other.m_capacity = 0;
+    other.m_data = nullptr;
+}
+
+// assign & move assign
+template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArray<T, Alloc>::operator=(const SparseArray& rhs)
+{
+    if (this != &rhs)
+    {
+        clear();
+        addUnsafe(rhs.size());
+
+        // copy data
+        if constexpr (memory::memory_policy_traits<T>::call_ctor)
+        {
+            for (SizeType i = 0; i < rhs.size(); ++i)
+            {
+                DataType*       dst_data = m_data + i;
+                const DataType* src_data = rhs.m_data + i;
+
+                if (rhs.hasData(i))
+                {
+                    new (dst_data) T(*src_data);
+                }
+                else
+                {
+                    dst_data->prev = src_data->prev;
+                    dst_data->next = src_data->next;
+                }
+            }
+        }
+        else
+        {
+            // copy data
+            memory::memcpy(m_data, rhs.m_data, sizeof(DataType) * rhs.m_size);
+        }
+
+        // copy bit array
+        memory::memcpy(m_bit_array, rhs.m_bit_array, sizeof(u32) * (rhs.m_bit_array_size / algo::NumBitsPerDWORD));
+
+        // copy other data
+        m_bit_array_size = rhs.m_bit_array_size;
+        m_num_hole = rhs.m_num_hole;
+        m_first_hole = rhs.m_first_hole;
+        m_size = rhs.m_size;
+        m_capacity = rhs.m_capacity;
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArray<T, Alloc>::operator=(SparseArray&& rhs)
+{
+    if (this != &rhs)
+    {
+        release();
+
+        // move data
+        m_bit_array = rhs.m_bit_array;
+        m_bit_array_size = rhs.m_bit_array_size;
+        m_num_hole = rhs.m_num_hole;
+        m_first_hole = rhs.m_first_hole;
+        m_size = rhs.m_size;
+        m_capacity = rhs.m_capacity;
+        m_data = rhs.m_data;
+        m_alloc = std::move(rhs.m_alloc);
+
+        // invalidate rhs
+        rhs.m_bit_array = nullptr;
+        rhs.m_bit_array_size = 0;
+        rhs.m_num_hole = 0;
+        rhs.m_first_hole = npos;
+        rhs.m_size = 0;
+        rhs.m_capacity = 0;
+        rhs.m_data = nullptr;
+    }
+}
 }// namespace kun

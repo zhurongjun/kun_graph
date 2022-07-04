@@ -66,7 +66,7 @@ public:
         return result;
     }
 
-    // resize functional
+    // resize helper
     template<typename T> KUN_INLINE T* resizeContainer(T* p, SizeType size, SizeType capacity, SizeType new_capacity)
     {
         KUN_Assert(new_capacity > 0);
@@ -75,10 +75,7 @@ public:
 
         if constexpr (memory::memory_policy_traits<T>::use_realloc)
         {
-            if (size && (size > capacity / 3 * 2 || size >= new_capacity))
-            {
-                return realloc(p, new_capacity);
-            }
+            return realloc(p, new_capacity);
         }
 
         // alloc new memory
