@@ -112,6 +112,8 @@ public:
     // modify
     T&       operator[](SizeType index);
     const T& operator[](SizeType index) const;
+    T&       last(SizeType index);
+    const T& last(SizeType index) const;
 
     // find
     template<typename TK> T*       find(const TK& v);
@@ -769,6 +771,18 @@ template<typename T, typename Alloc> KUN_INLINE T& Array<T, Alloc>::operator[](S
 }
 template<typename T, typename Alloc> KUN_INLINE const T& Array<T, Alloc>::operator[](SizeType index) const
 {
+    KUN_Assert(isValidIndex(index));
+    return *(m_data + index);
+}
+template<typename T, typename Alloc> KUN_INLINE T& Array<T, Alloc>::last(SizeType index)
+{
+    index = m_size - index;
+    KUN_Assert(isValidIndex(index));
+    return *(m_data + index);
+}
+template<typename T, typename Alloc> KUN_INLINE const T& Array<T, Alloc>::last(SizeType index) const
+{
+    index = m_size - index;
     KUN_Assert(isValidIndex(index));
     return *(m_data + index);
 }

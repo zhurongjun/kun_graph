@@ -475,4 +475,176 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
         rhs.m_data = nullptr;
     }
 }
+
+// compare
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::operator==(const SparseArray& rhs) const
+{
+    if (m_size == rhs.m_size)
+    {
+        for (SizeType i = 0; i < m_size; ++i)
+        {
+            bool lhs_has_data = hasData(i);
+            bool rhs_has_data = rhs.hasData(i);
+
+            if (lhs_has_data != rhs_has_data)
+            {
+                return false;
+            }
+            else if (lhs_has_data)
+            {
+                if ((*this)[i] != rhs[i])
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::operator!=(const SparseArray& rhs) const { return !((*this) == rhs); }
+
+// getter
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isCompact() const { return m_num_hole == 0; }
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::size() const
+{
+    return m_size - m_num_hole;
+}
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::sparseSize() const { return m_size; }
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::holeSize() const
+{
+    return m_num_hole;
+}
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::capacity() const
+{
+    return m_capacity;
+}
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::slack() const
+{
+    return m_capacity - m_size + m_num_hole;
+}
+template<typename T, typename Alloc> KUN_INLINE Alloc&       SparseArray<T, Alloc>::allocator() { return m_alloc; }
+template<typename T, typename Alloc> KUN_INLINE const Alloc& SparseArray<T, Alloc>::allocator() const { return m_alloc; }
+template<typename T, typename Alloc> KUN_INLINE bool         SparseArray<T, Alloc>::empty() const { return (m_size - m_num_hole) == 0; }
+
+// validate
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::hasData(SizeType idx) const { return _getBit(idx); }
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isHole(SizeType idx) const { return !_getBit(idx); }
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isValidIndex(SizeType idx) const { return idx >= 0 && idx < m_size; }
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isValidPointer(const T* p) const
+{
+    return p >= m_data && p < (m_data + m_size);
+}
+
+// memory op
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::clear()
+{
+    // destruct items
+    if constexpr (memory::memory_policy_traits<T>::call_dtor)
+    {
+        for (SizeType i = 0; i < m_size; ++i)
+        {
+            if (hasData(i))
+            {
+                (m_data + i)->data.~T();
+            }
+        }
+    }
+
+    // clean up bit array
+    if (m_bit_array)
+    {
+        algo::setWords(m_bit_array, algo::calcNumWords(m_bit_array_size));
+    }
+
+    // clean up data
+    m_num_hole = 0;
+    m_first_hole = npos;
+    m_size = 0;
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::release(SizeType capacity)
+{
+    clear();
+    _resizeMemory(capacity);
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::reserve(SizeType capacity)
+{
+    if (capacity > m_capacity)
+    {
+        _resizeMemory(capacity);
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::shrink()
+{
+    auto new_capacity = m_alloc.getShrink(m_size, m_capacity);
+    _resizeMemory(new_capacity);
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::compact()
+{
+    if (!isCompact())
+    {
+        // fill hole
+        SizeType compacted_index = m_size - m_num_hole;
+        SizeType search_index = m_size;
+        while (m_first_hole != npos)
+        {
+            SizeType next_index = (m_data + m_first_hole)->next;
+            if (next_index < compacted_index)
+            {
+                // find last allocated element
+                do {
+                    --search_index;
+                } while (!hasData(search_index));
+
+                // move element to the hole
+                *(m_data + m_first_hole) = std::move(*(m_data + search_index));
+                (m_data + search_index)->data.~T();
+            }
+            m_first_hole = next_index;
+        }
+
+        // setup bit array
+        _setBitRange(compacted_index, false, m_num_hole);
+
+        // setup data
+        m_num_hole = 0;
+        m_size = compacted_index;
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::compactStable()
+{
+    if (!isCompact())
+    {
+        SizeType compacted_index = m_size - m_num_hole;
+        SizeType read_index = 0;
+        SizeType write_index = 0;
+
+        // skip first compacted range
+        while (hasData(write_index) && write_index != m_size) ++write_index;
+        read_index = write_index + 1;
+
+        // copy items
+        while (read_index < m_size)
+        {
+            // skip hole
+            while (!hasData(read_index) && read_index < m_size) ++read_index;
+
+            // move items
+            while (read_index < m_size && hasData(read_index))
+            {
+                (m_data + write_index)->data = std::move((m_data + read_index)->data);
+                (m_data + read_index)->data.~T();
+                _setBit(write_index, true);
+                ++write_index;
+                ++read_index;
+            }
+        }
+
+        // reset data
+        _setBitRange(compacted_index, false, m_num_hole);
+        m_num_hole = 0;
+        m_first_hole = npos;
+        m_size = compacted_index;
+    }
+}
 }// namespace kun
