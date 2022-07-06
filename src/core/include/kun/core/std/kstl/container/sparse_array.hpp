@@ -105,7 +105,7 @@ public:
     void addAtZeroed(SizeType idx);
 
     // emplace
-    template<typename... Args> SizeType emplace(Args&&... args);
+    template<typename... Args> DataInfo emplace(Args&&... args);
     template<typename... Args> void     emplaceAt(SizeType index, Args&&... args);
 
     // append
@@ -149,6 +149,8 @@ public:
     template<typename TP = Less<T>> void sort(TP&& p = TP());
     template<typename TP = Less<T>> void sortStable(TP&& p = TP());
 
+    // support foreach
+
 private:
     // helper
     void _setBit(SizeType index, bool v);
@@ -156,9 +158,6 @@ private:
     void _setBitRange(SizeType start, SizeType n, bool v);
     void _resizeMemory(SizeType new_capacity);
     void _grow(SizeType n);
-    void _resizeBitArray();
-    void _growBitArray();
-    void _freeBitArray();
 
 private:
     u32*      m_bit_array;
@@ -646,5 +645,125 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::comp
         m_first_hole = npos;
         m_size = compacted_index;
     }
+}
+
+// add
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::add(const T& v)
+{
+    DataInfo info = addUnsafe();
+    new (info.data) T(v);
+    return info;
+}
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::addUnsafe()
+{
+    SizeType index;
+
+    if (m_num_hole)
+    {
+        // remove and use first index from free list
+        index = m_first_hole;
+        m_first_hole = m_data[m_first_hole].next;
+        --m_num_hole;
+
+        // break link
+        if (m_num_hole)
+        {
+            m_data[m_first_hole].prev = npos;
+        }
+    }
+    else
+    {
+        // add new element
+        index = m_size;
+        _grow(1);
+    }
+
+    // setup bit
+    _setBit(index, true);
+
+    return DataInfo(&m_data[index].data, index);
+}
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::addDefault()
+{
+    DataInfo info = addUnsafe();
+    new (info.data) T();
+    return info;
+}
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::addZeroed()
+{
+    DataInfo info = addUnsafe();
+    memory::memzero(info.data, sizeof(T));
+    return info;
+}
+
+// add at
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::addAt(SizeType idx, const T& v)
+{
+    addAtUnsafe(idx);
+    new (&m_data[idx].data) T(v);
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::addAtUnsafe(SizeType idx)
+{
+    KUN_Assert(isHole(idx));
+    KUN_Assert(isValidIndex(idx));
+
+    DataType& data = m_data[idx];
+
+    // remove from free list
+    --m_num_hole;
+    if (m_first_hole == idx)
+    {
+        m_first_hole = data.next;
+    }
+    if (data.next != npos)
+    {
+        m_data[data.next].prev = data.prev;
+    }
+    if (data.prev != npos)
+    {
+        m_data[data.prev].next = data.next;
+    }
+
+    // setup bit
+    _setBit(idx, true);
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::addAtDefault(SizeType idx)
+{
+    addAtUnsafe(idx);
+    new (&m_data[idx].data) T();
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::addAtZeroed(SizeType idx)
+{
+    addAtUnsafe(idx);
+    memory::memzero(&m_data[idx].data, sizeof(T));
+}
+
+// emplace
+template<typename T, typename Alloc>
+template<typename... Args>
+KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::emplace(Args&&... args)
+{
+    DataInfo info = addUnsafe();
+    new (info.data) T(std::forward<Args>(args)...);
+    return info;
+}
+template<typename T, typename Alloc> template<typename... Args> KUN_INLINE void SparseArray<T, Alloc>::emplaceAt(SizeType index, Args&&... args)
+{
+    addAtUnsafe(index);
+    new (&m_data[index].data) T(std::forward<Args>(args)...);
+}
+
+// append
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::append(const SparseArray& arr)
+{
+    for (const T& data : arr) { add(data); }
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::append(std::initializer_list<T> init_list)
+{
+    for (const T& data : init_list) { add(data); }
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::append(T* p, SizeType n)
+{
+    for (SizeType i = 0; i < n; ++i) { add(p[i]); }
 }
 }// namespace kun
