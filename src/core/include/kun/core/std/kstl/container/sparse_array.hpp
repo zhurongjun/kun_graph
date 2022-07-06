@@ -766,4 +766,105 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::appe
 {
     for (SizeType i = 0; i < n; ++i) { add(p[i]); }
 }
+
+// remove
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::removeAt(SizeType index, SizeType n)
+{
+    KUN_Assert(isValidIndex(index));
+    KUN_Assert(isValidIndex(index + n));
+    KUN_Assert(n > 0);
+
+    if constexpr (!memory::memory_policy_traits<T>::call_dtor)
+    {
+        for (SizeType i = 0; i < n; ++i) { m_data[index + i].data.~T(); }
+    }
+
+    removeAtUnsafe(index, n);
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::removeAtUnsafe(SizeType index, SizeType n)
+{
+    KUN_Assert(isValidIndex(index));
+    KUN_Assert(isValidIndex(index + n));
+    KUN_Assert(n > 0);
+
+    for (; n; --n)
+    {
+        DataType& data = m_data[index];
+
+        // link to free list
+        if (m_num_hole)
+        {
+            m_data[m_first_hole].prev = index;
+        }
+        data.prev = npos;
+        data.next = m_first_hole;
+        m_first_hole = index;
+        ++m_num_hole;
+
+        // set flag
+        _setBit(index, true);
+
+        // update index
+        ++index;
+    }
+}
+template<typename T, typename Alloc>
+template<typename TK>
+KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::remove(const TK& v)
+{
+    return removeIf([&v](const T& a) { return a == v; });
+}
+template<typename T, typename Alloc>
+template<typename TK>
+KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::removeLast(const TK& v)
+{
+    return removeLastIf([&v](const T& a) { return a == v; });
+}
+template<typename T, typename Alloc>
+template<typename TK>
+KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::removeAll(const TK& v)
+{
+    return removeAllIf([&v](const T& a) { return a == v; });
+}
+
+// remove if
+template<typename T, typename Alloc> template<typename TP> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::removeIf(TP&& p)
+{
+    if (DataInfo info = findIf(std::forward<TP>(p)))
+    {
+        removeAt(info.index);
+        return info.index;
+    }
+    return npos;
+}
+template<typename T, typename Alloc>
+template<typename TP>
+KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::removeLastIf(TP&& p)
+{
+    if (DataInfo info = findLastIf(std::forward<TP>(p)))
+    {
+        removeAt(info.index);
+        return info.index;
+    }
+    return npos;
+}
+template<typename T, typename Alloc>
+template<typename TP>
+KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::removeAllIf(TP&& p)
+{
+    SizeType count = 0;
+    for (SizeType i = 0; i < m_size; ++i)
+    {
+        if (hasData(i) && p(m_data[i].data))
+        {
+            removeAt(i);
+            ++count;
+        }
+    }
+    return count;
+}
+
+// modify
+template<typename T, typename Alloc> KUN_INLINE T& SparseArray<T, Alloc>::operator[](SizeType index) { return m_data[index].data; }
+template<typename T, typename Alloc> KUN_INLINE const T& SparseArray<T, Alloc>::operator[](SizeType index) const { return m_data[index].data; }
 }// namespace kun
