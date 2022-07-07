@@ -373,4 +373,143 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(a[2], 1);
         ASSERT_EQ(a[3], 4);
     }
+
+    // add
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+        auto info = a.add(10);
+        *info.data = 100;
+        ASSERT_EQ(a.size(), 7);
+        ASSERT_EQ(a.sparseSize(), 7);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_GE(a.capacity(), 7);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 1);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
+        ASSERT_EQ(a[6], 100);
+
+        a.removeAt(1);
+        a.addZeroed();
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 0);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
+        ASSERT_EQ(a[6], 100);
+
+        a.removeAt(1);
+        a.removeAt(4);
+        info = a.addUnsafe();
+        *info.data = 114514;
+        ASSERT_EQ(a[0], 1);
+        // ASSERT_EQ(a[1], 0);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 114514);
+        ASSERT_EQ(a[5], 4);
+        ASSERT_EQ(a[6], 100);
+    }
+
+    // add at
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(4);
+        a.addAt(1, 114514);
+        a.addAt(4, 10086);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 114514);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 10086);
+        ASSERT_EQ(a[5], 4);
+
+        a.removeAt(2);
+        a.removeAt(5);
+        a.addAtZeroed(2);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 114514);
+        ASSERT_EQ(a[2], 0);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 10086);
+        // ASSERT_EQ(a[5], 4);
+    }
+
+    // emplace
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(4);
+        a.emplace(114514);
+        a.emplaceAt(1, 10086);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 10086);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 114514);
+        ASSERT_EQ(a[5], 4);
+    }
+
+    // append
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(4);
+        a.append({114514, 114514, 114514});
+        ASSERT_EQ(a.size(), 7);
+        ASSERT_EQ(a.sparseSize(), 7);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_GE(a.capacity(), 7);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 114514);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 114514);
+        ASSERT_EQ(a[5], 4);
+        ASSERT_EQ(a[6], 114514);
+
+        SparseArray<u32> b;
+        b.append({1, 1, 4, 5, 1, 4});
+        b.removeAt(0);
+        b.removeAt(1);
+        b.removeAt(5);
+        a.append(b);
+        ASSERT_EQ(a.size(), 10);
+        ASSERT_EQ(a.sparseSize(), 10);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_GE(a.capacity(), 10);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 114514);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 114514);
+        ASSERT_EQ(a[5], 4);
+        ASSERT_EQ(a[6], 114514);
+        ASSERT_EQ(a[7], 4);
+        ASSERT_EQ(a[8], 5);
+        ASSERT_EQ(a[9], 1);
+
+        Array<u32> c(100, 114514);
+        a.removeAt(6, 4);
+        a.append(c.data(), c.size());
+        ASSERT_EQ(a.size(), 106);
+        ASSERT_EQ(a.sparseSize(), 106);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_GE(a.capacity(), 106);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 114514);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 114514);
+        ASSERT_EQ(a[5], 4);
+        for (Size i = 6; i < 106; ++i) { ASSERT_EQ(a[i], 114514); }
+    }
 }

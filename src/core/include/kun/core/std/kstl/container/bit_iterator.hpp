@@ -131,8 +131,8 @@ public:
         return *this;
     }
 
-    KUN_INLINE bool     operator==(const TrueBitIt& rhs) { return m_bit_index == rhs.m_bit_index && m_data == rhs.m_data; }
-    KUN_INLINE bool     operator!=(const TrueBitIt& rhs) { return !(*this == rhs); }
+    KUN_INLINE bool     operator==(const TrueBitIt& rhs) const { return m_bit_index == rhs.m_bit_index && m_data == rhs.m_data; }
+    KUN_INLINE bool     operator!=(const TrueBitIt& rhs) const { return !(*this == rhs); }
     KUN_INLINE explicit operator bool() const { return m_bit_index < m_size; }
     KUN_INLINE bool     operator!() const { return !(bool)*this; }
     KUN_INLINE TS       index() const { return m_bit_index; }

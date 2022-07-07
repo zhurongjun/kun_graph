@@ -1036,18 +1036,18 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Spars
 // support foreach
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<false> SparseArray<T, Alloc>::begin()
 {
-    Iterator<false>(*this);
+    return Iterator<false>(*this);
 }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<false> SparseArray<T, Alloc>::end()
 {
-    Iterator<false>(*this, m_size);
+    return Iterator<false>(*this, m_size);
 }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<true> SparseArray<T, Alloc>::begin() const
 {
-    Iterator<true>(*this);
+    return Iterator<true>(*this);
 }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<true> SparseArray<T, Alloc>::end() const
 {
-    Iterator<true>(*this, m_size);
+    return Iterator<true>(*this, m_size);
 }
 }// namespace kun
