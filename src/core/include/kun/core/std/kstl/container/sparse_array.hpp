@@ -332,7 +332,6 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
         if constexpr (memory::memory_policy_traits<T>::use_realloc)
         {
             m_data = m_alloc.resizeContainer(m_data, m_size, m_capacity, new_capacity);
-            m_size = new_size;
         }
         else
         {
@@ -362,10 +361,10 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
             // release old memory
             m_alloc.free(m_data);
             m_data = new_memory;
-
-            // update size
-            m_size = new_size;
         }
+
+        // update capacity
+        m_capacity = new_capacity;
 
         // grow bit array
         if (m_bit_array_size < m_capacity)
@@ -379,7 +378,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
             if (new_word_size > old_word_size)
             {
                 // alloc
-                m_alloc.resizeContainer(m_bit_array, old_word_size, old_word_size, new_word_size);
+                m_bit_array = m_alloc.resizeContainer(m_bit_array, old_word_size, old_word_size, new_word_size);
 
                 // clean
                 algo::setWords(m_bit_array + old_word_size, new_word_size - old_word_size, false);
@@ -389,6 +388,9 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
             }
         }
     }
+
+    // update size
+    m_size = new_size;
 }
 
 // ctor & dtor
