@@ -269,4 +269,34 @@ TEST(TestCore, test_sparse_array)
         a.removeAt(1);
         ASSERT_EQ(a, c);
     }
+
+    // [needn't test] getter
+
+    // validate
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(0);
+        a.removeAt(2);
+        a.removeAt(4);
+        for (Size i = 0; i < 6; ++i) { ASSERT_NE(a.hasData(i), a.isHole(i)); }
+        ASSERT_TRUE(a.isHole(0));
+        ASSERT_TRUE(a.hasData(1));
+        ASSERT_TRUE(a.isHole(2));
+        ASSERT_TRUE(a.hasData(3));
+        ASSERT_TRUE(a.isHole(4));
+        ASSERT_TRUE(a.hasData(5));
+
+        ASSERT_FALSE(a.isValidIndex(-1));
+        ASSERT_TRUE(a.isValidIndex(0));
+        ASSERT_TRUE(a.isValidIndex(3));
+        ASSERT_TRUE(a.isValidIndex(5));
+        ASSERT_FALSE(a.isValidIndex(6));
+
+        ASSERT_FALSE(a.isValidPointer(&a[0] - 1));
+        ASSERT_TRUE(a.isValidPointer(&a[0]));
+        ASSERT_TRUE(a.isValidPointer(&a[3]));
+        ASSERT_TRUE(a.isValidPointer(&a[5]));
+        ASSERT_FALSE(a.isValidPointer(&a[5] + 4));
+    }
 }

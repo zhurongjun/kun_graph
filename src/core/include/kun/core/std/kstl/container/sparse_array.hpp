@@ -570,7 +570,7 @@ template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isHo
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isValidIndex(SizeType idx) const { return idx >= 0 && idx < m_size; }
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isValidPointer(const T* p) const
 {
-    return p >= m_data && p < (m_data + m_size);
+    return p >= reinterpret_cast<T*>(m_data) && p < reinterpret_cast<T*>(m_data + m_size);
 }
 
 // memory op
@@ -812,7 +812,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::remo
     KUN_Assert(isValidIndex(index + n));
     KUN_Assert(n > 0);
 
-    if constexpr (!memory::memory_policy_traits<T>::call_dtor)
+    if constexpr (memory::memory_policy_traits<T>::call_dtor)
     {
         for (SizeType i = 0; i < n; ++i) { m_data[index + i].data.~T(); }
     }
@@ -840,7 +840,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::remo
         ++m_num_hole;
 
         // set flag
-        _setBit(index, true);
+        _setBit(index, false);
 
         // update index
         ++index;
@@ -903,8 +903,16 @@ KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::remov
 }
 
 // modify
-template<typename T, typename Alloc> KUN_INLINE T& SparseArray<T, Alloc>::operator[](SizeType index) { return m_data[index].data; }
-template<typename T, typename Alloc> KUN_INLINE const T& SparseArray<T, Alloc>::operator[](SizeType index) const { return m_data[index].data; }
+template<typename T, typename Alloc> KUN_INLINE T& SparseArray<T, Alloc>::operator[](SizeType index)
+{
+    KUN_Assert(isValidIndex(index));
+    return m_data[index].data;
+}
+template<typename T, typename Alloc> KUN_INLINE const T& SparseArray<T, Alloc>::operator[](SizeType index) const
+{
+    KUN_Assert(isValidIndex(index));
+    return m_data[index].data;
+}
 
 // find
 template<typename T, typename Alloc>
