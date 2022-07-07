@@ -232,7 +232,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
         else
         {
             // alloc new memory
-            DataType* new_memory = m_alloc.alloc<DataType>(new_capacity);
+            DataType* new_memory = m_alloc.template alloc<DataType>(new_capacity);
 
             // move items
             for (SizeType i = 0; i < new_size; ++i)
@@ -336,7 +336,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
         else
         {
             // alloc new memory
-            DataType* new_memory = m_alloc.alloc<DataType>(new_capacity);
+            DataType* new_memory = m_alloc.template alloc<DataType>(new_capacity);
 
             // move items
             for (SizeType i = 0; i < m_size; ++i)
@@ -1026,19 +1026,19 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Spars
 }
 
 // support foreach
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::Iterator<false> SparseArray<T, Alloc>::begin()
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<false> SparseArray<T, Alloc>::begin()
 {
     Iterator<false>(*this);
 }
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::Iterator<false> SparseArray<T, Alloc>::end()
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<false> SparseArray<T, Alloc>::end()
 {
     Iterator<false>(*this, m_size);
 }
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::Iterator<true> SparseArray<T, Alloc>::begin() const
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<true> SparseArray<T, Alloc>::begin() const
 {
     Iterator<true>(*this);
 }
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::Iterator<true> SparseArray<T, Alloc>::end() const
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<true> SparseArray<T, Alloc>::end() const
 {
     Iterator<true>(*this, m_size);
 }
