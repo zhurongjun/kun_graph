@@ -1,6 +1,7 @@
 #pragma once
 #include "kun/core/config.h"
 #include "kun/core/std/types.hpp"
+#include "bit_iterator.hpp"
 #include "array.hpp"
 #include "fwd.hpp"
 
@@ -867,4 +868,123 @@ KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::remov
 // modify
 template<typename T, typename Alloc> KUN_INLINE T& SparseArray<T, Alloc>::operator[](SizeType index) { return m_data[index].data; }
 template<typename T, typename Alloc> KUN_INLINE const T& SparseArray<T, Alloc>::operator[](SizeType index) const { return m_data[index].data; }
+
+// find
+template<typename T, typename Alloc>
+template<typename TK>
+KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::find(const TK& v)
+{
+    return findIf([&v](const T& a) { return a == v; });
+}
+template<typename T, typename Alloc>
+template<typename TK>
+KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::findLast(const TK& v)
+{
+    return findLastIf([&v](const T& a) { return a == v; });
+}
+template<typename T, typename Alloc>
+template<typename TK>
+KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::find(const TK& v) const
+{
+    return findIf([&v](const T& a) { return a == v; });
+}
+template<typename T, typename Alloc>
+template<typename TK>
+KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::findLast(const TK& v) const
+{
+    return findLastIf([&v](const T& a) { return a == v; });
+}
+
+// find if
+template<typename T, typename Alloc> template<typename TP> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::findIf(TP&& p)
+{
+    for (SizeType i = 0; i < m_size; ++i)
+    {
+        if (hasData(i))
+        {
+            auto& data = m_data[i].data;
+            if (p(data))
+            {
+                return DataInfo(&data, i);
+            }
+        }
+    }
+    return DataInfo();
+}
+template<typename T, typename Alloc>
+template<typename TP>
+KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::findLastIf(TP&& p)
+{
+    for (SizeType i = m_size - 1; i >= 0; --i)
+    {
+        if (hasData(i))
+        {
+            auto& data = m_data[i].data;
+            if (p(data))
+            {
+                return DataInfo(&data, i);
+            }
+        }
+    }
+    return DataInfo();
+}
+template<typename T, typename Alloc>
+template<typename TP>
+KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::findIf(TP&& p) const
+{
+    for (SizeType i = 0; i < m_size; ++i)
+    {
+        if (hasData(i))
+        {
+            auto& data = m_data[i].data;
+            if (p(data))
+            {
+                return ConstDataInfo(&data, i);
+            }
+        }
+    }
+    return ConstDataInfo();
+}
+template<typename T, typename Alloc>
+template<typename TP>
+KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::findLastIf(TP&& p) const
+{
+    for (SizeType i = m_size - 1; i >= 0; --i)
+    {
+        if (hasData(i))
+        {
+            auto& data = m_data[i].data;
+            if (p(data))
+            {
+                return ConstDataInfo(&data, i);
+            }
+        }
+    }
+    return ConstDataInfo();
+}
+
+// contain
+template<typename T, typename Alloc> template<typename TK> KUN_INLINE bool SparseArray<T, Alloc>::contain(const TK& v) const { return (bool)find(v); }
+template<typename T, typename Alloc> template<typename TP> KUN_INLINE bool SparseArray<T, Alloc>::containIf(TP&& p) const
+{
+    return (bool)findIf(std::forward<TP>(p));
+}
+
+// sort
+template<typename T, typename Alloc> template<typename TP> KUN_INLINE void SparseArray<T, Alloc>::sort(TP&& p)
+{
+    if (m_size)
+    {
+        compact();
+        algo::introSort(m_data, m_data + m_size, [&p](const DataType& a, const DataType& b) { return p(a.data, b.data); });
+    }
+}
+template<typename T, typename Alloc> template<typename TP> KUN_INLINE void SparseArray<T, Alloc>::sortStable(TP&& p)
+{
+    if (m_size)
+    {
+        compactStable();
+        algo::mergeSort(m_data, m_data + m_size, [&p](const DataType& a, const DataType& b) { return p(a.data, b.data); });
+    }
+}
 }// namespace kun
