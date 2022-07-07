@@ -284,7 +284,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
             // clean memory
             if (data_word_size > old_word_size)
             {
-                algo::setWords(m_bit_array + old_word_size, new_word_size - old_word_size);
+                algo::setWords(m_bit_array + old_word_size, new_word_size - old_word_size, false);
             }
 
             // update size
@@ -382,7 +382,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
                 m_alloc.resizeContainer(m_bit_array, old_word_size, old_word_size, new_word_size);
 
                 // clean
-                algo::setWords(m_bit_array + old_word_size, new_word_size - old_word_size);
+                algo::setWords(m_bit_array + old_word_size, new_word_size - old_word_size, false);
 
                 // update size
                 m_bit_array_size = new_word_size * algo::NumBitsPerDWORD;
@@ -589,7 +589,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::clea
     // clean up bit array
     if (m_bit_array)
     {
-        algo::setWords(m_bit_array, algo::calcNumWords(m_bit_array_size));
+        algo::setWords(m_bit_array, algo::calcNumWords(m_bit_array_size), false);
     }
 
     // clean up data
