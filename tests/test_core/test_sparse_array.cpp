@@ -514,16 +514,190 @@ TEST(TestCore, test_sparse_array)
     }
 
     // remove
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(4);
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 2);
+        ASSERT_TRUE(a.hasData(0));
+        ASSERT_TRUE(a.isHole(1));
+        ASSERT_TRUE(a.hasData(2));
+        ASSERT_TRUE(a.hasData(3));
+        ASSERT_TRUE(a.isHole(4));
+        ASSERT_TRUE(a.hasData(5));
+        ASSERT_EQ(a[0], 1);
+        // ASSERT_EQ(a[1], 1);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        // ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
+
+        a.remove(4);
+        ASSERT_EQ(a.size(), 3);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 3);
+        ASSERT_TRUE(a.hasData(0));
+        ASSERT_TRUE(a.isHole(1));
+        ASSERT_TRUE(a.isHole(2));
+        ASSERT_TRUE(a.hasData(3));
+        ASSERT_TRUE(a.isHole(4));
+        ASSERT_TRUE(a.hasData(5));
+        ASSERT_EQ(a[0], 1);
+        // ASSERT_EQ(a[1], 1);
+        // ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        // ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
+
+        a.clear();
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(3);
+        a.removeLast(1);
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 2);
+        ASSERT_TRUE(a.hasData(0));
+        ASSERT_TRUE(a.hasData(1));
+        ASSERT_TRUE(a.hasData(2));
+        ASSERT_TRUE(a.isHole(3));
+        ASSERT_TRUE(a.isHole(4));
+        ASSERT_TRUE(a.hasData(5));
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 1);
+        ASSERT_EQ(a[2], 4);
+        // ASSERT_EQ(a[3], 5);
+        // ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
+
+        a.add(4);
+        a.add(4);
+        a.removeAll(4);
+        ASSERT_EQ(a.size(), 2);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 4);
+        ASSERT_TRUE(a.hasData(0));
+        ASSERT_TRUE(a.hasData(1));
+        ASSERT_TRUE(a.isHole(2));
+        ASSERT_TRUE(a.isHole(3));
+        ASSERT_TRUE(a.isHole(4));
+        ASSERT_TRUE(a.isHole(5));
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 1);
+        // ASSERT_EQ(a[2], 4);
+        // ASSERT_EQ(a[3], 5);
+        // ASSERT_EQ(a[4], 1);
+        // ASSERT_EQ(a[5], 4);
+    }
 
     // remove if
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeIf([](const u32& a) { return a > 3; });
+        ASSERT_EQ(a.size(), 5);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 1);
+        ASSERT_TRUE(a.hasData(0));
+        ASSERT_TRUE(a.hasData(1));
+        ASSERT_TRUE(a.isHole(2));
+        ASSERT_TRUE(a.hasData(3));
+        ASSERT_TRUE(a.hasData(4));
+        ASSERT_TRUE(a.hasData(5));
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 1);
+        // ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
+
+        a.removeLastIf([](const u32& a) { return a > 3; });
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 2);
+        ASSERT_TRUE(a.hasData(0));
+        ASSERT_TRUE(a.hasData(1));
+        ASSERT_TRUE(a.isHole(2));
+        ASSERT_TRUE(a.hasData(3));
+        ASSERT_TRUE(a.hasData(4));
+        ASSERT_TRUE(a.isHole(5));
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 1);
+        // ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 1);
+        // ASSERT_EQ(a[5], 4);
+
+        a.removeAllIf([](const u32& a) { return a < 3; });
+        ASSERT_EQ(a.size(), 1);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 5);
+        ASSERT_TRUE(a.isHole(0));
+        ASSERT_TRUE(a.isHole(1));
+        ASSERT_TRUE(a.isHole(2));
+        ASSERT_TRUE(a.hasData(3));
+        ASSERT_TRUE(a.isHole(4));
+        ASSERT_TRUE(a.isHole(5));
+        // ASSERT_EQ(a[0], 1);
+        // ASSERT_EQ(a[1], 1);
+        // ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        // ASSERT_EQ(a[4], 1);
+        // ASSERT_EQ(a[5], 4);
+    }
 
     // [needn't test] modify
 
-    // find
+    // [test in remove] find
 
-    // find if
+    // [test in remove] find if
 
     // contain
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+
+        ASSERT_TRUE(a.contain(5));
+        a.removeAll(5);
+        ASSERT_FALSE(a.contain(5));
+
+        auto cond = [](const u32& a) { return a < 4; };
+        ASSERT_TRUE(a.containIf(cond));
+        a.removeAllIf(cond);
+        ASSERT_FALSE(a.containIf(cond));
+    }
 
     // sort
+    {
+        SparseArray<u32> a;
+        a.reserve(1000);
+        for (Size i = 0; i < 1000; ++i) { a.add(999 - i); }
+        a.removeAllIf([](const u32& n) { return n % 2 == 1; });
+        ASSERT_EQ(a.size(), 500);
+        ASSERT_EQ(a.sparseSize(), 1000);
+        ASSERT_EQ(a.holeSize(), 500);
+        ASSERT_EQ(a.capacity(), 1000);
+        a.sort();
+        ASSERT_EQ(a.size(), 500);
+        ASSERT_EQ(a.sparseSize(), 500);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_EQ(a.capacity(), 1000);
+        for (Size i = 0; i < 500; ++i) { ASSERT_EQ(a[i], i * 2); }
+
+        a.clear();
+        for (Size i = 0; i < 1000; ++i) { a.add(i); }
+        a.removeAllIf([](const u32& n) { return n % 2 == 1; });
+        ASSERT_EQ(a.size(), 500);
+        ASSERT_EQ(a.sparseSize(), 1000);
+        ASSERT_EQ(a.holeSize(), 500);
+        ASSERT_EQ(a.capacity(), 1000);
+        a.sortStable(Greater<u32>());
+        ASSERT_EQ(a.size(), 500);
+        ASSERT_EQ(a.sparseSize(), 500);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_EQ(a.capacity(), 1000);
+        for (Size i = 0; i < 500; ++i) { ASSERT_EQ(a[i], (499 - i) * 2); }
+    }
 }
