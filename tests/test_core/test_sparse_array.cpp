@@ -512,4 +512,18 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(a[5], 4);
         for (Size i = 6; i < 106; ++i) { ASSERT_EQ(a[i], 114514); }
     }
+
+    // remove
+
+    // remove if
+
+    // [needn't test] modify
+
+    // find
+
+    // find if
+
+    // contain
+
+    // sort
 }

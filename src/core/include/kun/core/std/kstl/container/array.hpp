@@ -147,7 +147,8 @@ public:
     template<typename TP = Less<T>> void     heapSort(TP&& p = TP());
 
     // support stack
-    void     pop();
+    void     pop(SizeType n = 1);
+    void     popUnsafe(SizeType n = 1);
     T        popGet();
     void     push(const T& v);
     void     push(T&& v);
@@ -884,8 +885,20 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Array
 }
 
 // support stack
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::pop() { removeAt(m_size - 1, 1); }
-template<typename T, typename Alloc> KUN_INLINE T    Array<T, Alloc>::popGet()
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::pop(SizeType n)
+{
+    KUN_Assert(n > 0);
+    KUN_Assert(n <= m_size);
+    memory::destructItem(m_data + m_size - n, n);
+    m_size -= n;
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::popUnsafe(SizeType n)
+{
+    KUN_Assert(n > 0);
+    KUN_Assert(n <= m_size);
+    m_size -= n;
+}
+template<typename T, typename Alloc> KUN_INLINE T Array<T, Alloc>::popGet()
 {
     T result = std::move(*(m_data + m_size - 1));
     pop();
