@@ -2,7 +2,10 @@
 #include "kun/core/config.h"
 #include "kun/core/std/types.hpp"
 #include "bit_iterator.hpp"
-#include "array.hpp"
+#include "kun/core/std/kstl/algo/intro_sort.hpp"
+#include "kun/core/std/kstl/algo/merge_sort.hpp"
+#include "kun/core/std/kstl/algo/remove.hpp"
+#include "kun/core/std/kstl/algo/find.hpp"
 #include "fwd.hpp"
 
 // SparseArray structs

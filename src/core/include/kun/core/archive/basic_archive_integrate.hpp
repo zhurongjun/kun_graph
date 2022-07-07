@@ -76,7 +76,7 @@ template<typename T, typename ElemPolicy> struct SerUSet
 {
     static void defaultPolicy(Archive& ar, T& v) { ar& NamedValue<T>(v); }
 
-    KUN_INLINE SerUSet(USet<T>& set, ElemPolicy& policy = &defaultPolicy)
+    KUN_INLINE SerUSet(eastl::unordered_set<T>& set, ElemPolicy& policy = &defaultPolicy)
         : m_set(set)
         , m_policy(std::forward<ElemPolicy>(policy))
     {
@@ -109,7 +109,7 @@ template<typename T, typename ElemPolicy> struct SerUSet
     }
 
 private:
-    USet<T>& m_set;
+    eastl::unordered_set<T>& m_set;
     ElemPolicy& m_policy;
 };
 
