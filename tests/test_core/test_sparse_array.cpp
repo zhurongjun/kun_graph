@@ -222,7 +222,7 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(b[5], 4);
 
         c.append({1, 1, 4, 514, 514, 514});
-        auto             old_capacity = a.capacity();
+        auto old_capacity = a.capacity();
         c = std::move(a);
         ASSERT_EQ(a.size(), 0);
         ASSERT_EQ(a.sparseSize(), 0);
@@ -251,5 +251,22 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(c[4], 2);
         ASSERT_EQ(c[5], 4);
         ASSERT_EQ(c[6], 1);
+    }
+
+    // compare
+    {
+        SparseArray<u32> a, b, c;
+        a.append({1, 1, 4, 5, 1, 4});
+        b.append({114, 114, 514, 114, 514, 114});
+        c.append({1, 1, 4, 5, 1, 4});
+
+        ASSERT_EQ(a, c);
+        ASSERT_NE(a, b);
+
+        c.removeAt(1);
+        ASSERT_NE(a, c);
+
+        a.removeAt(1);
+        ASSERT_EQ(a, c);
     }
 }

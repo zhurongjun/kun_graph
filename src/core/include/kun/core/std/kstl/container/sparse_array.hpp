@@ -190,7 +190,7 @@ public:
 private:
     // helper
     void _setBit(SizeType index, bool v);
-    bool _getBit(SizeType index);
+    bool _getBit(SizeType index) const;
     void _setBitRange(SizeType start, SizeType n, bool v);
     void _resizeMemory(SizeType new_capacity);
     void _grow(SizeType n);
@@ -212,7 +212,7 @@ namespace kun
 {
 // helper
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_setBit(SizeType index, bool v) { algo::setBit(m_bit_array, index, v); }
-template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::_getBit(SizeType index) { return algo::getBit(m_bit_array, index); }
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::_getBit(SizeType index) const { return algo::getBit(m_bit_array, index); }
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_setBitRange(SizeType start, SizeType n, bool v)
 {
     algo::setBitRange(m_data, start, n, v);
