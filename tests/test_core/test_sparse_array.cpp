@@ -299,4 +299,78 @@ TEST(TestCore, test_sparse_array)
         ASSERT_TRUE(a.isValidPointer(&a[5]));
         ASSERT_FALSE(a.isValidPointer(&a[5] + 4));
     }
+
+    // memory op
+    {
+        SparseArray<u32> a;
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(5);
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 2);
+        ASSERT_GE(a.capacity(), 6);
+
+        auto old_capacity = a.capacity();
+        a.clear();
+        ASSERT_EQ(a.size(), 0);
+        ASSERT_EQ(a.sparseSize(), 0);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_EQ(a.capacity(), old_capacity);
+
+        a.release();
+        ASSERT_EQ(a.size(), 0);
+        ASSERT_EQ(a.sparseSize(), 0);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_EQ(a.capacity(), 0);
+
+        a.release(5);
+        ASSERT_EQ(a.size(), 0);
+        ASSERT_EQ(a.sparseSize(), 0);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_EQ(a.capacity(), 5);
+
+        a.reserve(100);
+        a.append({1, 1, 4, 5, 1, 4});
+        ASSERT_EQ(a.size(), 6);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_EQ(a.capacity(), 100);
+
+        a.removeAt(4);
+        a.removeAt(5);
+        a.shrink();
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 2);
+        ASSERT_EQ(a.capacity(), 6);
+
+        a.clear();
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(3);
+        a.compact();
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 4);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_GE(a.capacity(), 6);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 1);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 4);
+
+        a.clear();
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(3);
+        a.compactStable();
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 4);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_GE(a.capacity(), 6);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 4);
+        ASSERT_EQ(a[2], 1);
+        ASSERT_EQ(a[3], 4);
+    }
 }

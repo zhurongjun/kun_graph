@@ -215,7 +215,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_set
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::_getBit(SizeType index) const { return algo::getBit(m_bit_array, index); }
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_setBitRange(SizeType start, SizeType n, bool v)
 {
-    algo::setBitRange(m_data, start, n, v);
+    algo::setBitRange(m_bit_array, start, n, v);
 }
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_resizeMemory(SizeType new_capacity)
 {
@@ -626,7 +626,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::comp
         while (m_first_hole != npos)
         {
             SizeType next_index = (m_data + m_first_hole)->next;
-            if (next_index < compacted_index)
+            if (m_first_hole < compacted_index)
             {
                 // find last allocated element
                 do {
@@ -641,7 +641,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::comp
         }
 
         // setup bit array
-        _setBitRange(compacted_index, false, m_num_hole);
+        _setBitRange(compacted_index, m_num_hole, false);
 
         // setup data
         m_num_hole = 0;
@@ -678,7 +678,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::comp
         }
 
         // reset data
-        _setBitRange(compacted_index, false, m_num_hole);
+        _setBitRange(compacted_index, m_num_hole, false);
         m_num_hole = 0;
         m_first_hole = npos;
         m_size = compacted_index;
@@ -809,7 +809,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::appe
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::removeAt(SizeType index, SizeType n)
 {
     KUN_Assert(isValidIndex(index));
-    KUN_Assert(isValidIndex(index + n));
+    KUN_Assert(isValidIndex(index + n - 1));
     KUN_Assert(n > 0);
 
     if constexpr (memory::memory_policy_traits<T>::call_dtor)
@@ -822,7 +822,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::remo
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::removeAtUnsafe(SizeType index, SizeType n)
 {
     KUN_Assert(isValidIndex(index));
-    KUN_Assert(isValidIndex(index + n));
+    KUN_Assert(isValidIndex(index + n - 1));
     KUN_Assert(n > 0);
 
     for (; n; --n)
