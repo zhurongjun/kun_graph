@@ -448,12 +448,13 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
     if (this != &rhs)
     {
         clear();
-        addUnsafe(rhs.size());
+        reserve(rhs.m_size);
+        m_size = rhs.m_size;
 
         // copy data
         if constexpr (memory::memory_policy_traits<T>::call_ctor)
         {
-            for (SizeType i = 0; i < rhs.size(); ++i)
+            for (SizeType i = 0; i < rhs.m_size; ++i)
             {
                 DataType*       dst_data = m_data + i;
                 const DataType* src_data = rhs.m_data + i;
@@ -476,15 +477,13 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
         }
 
         // copy bit array
-        memory::memcpy(m_bit_array, rhs.m_bit_array, sizeof(u32) * (rhs.m_bit_array_size / algo::NumBitsPerDWORD));
+        memory::memcpy(m_bit_array, rhs.m_bit_array, sizeof(u32) * algo::calcNumWords(rhs.m_size));
 
         // copy other data
-        m_bit_array_size = rhs.m_bit_array_size;
         m_num_hole = rhs.m_num_hole;
         m_first_hole = rhs.m_first_hole;
-        m_size = rhs.m_size;
-        m_capacity = rhs.m_capacity;
     }
+    return *this;
 }
 template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArray<T, Alloc>::operator=(SparseArray&& rhs)
 {
@@ -511,6 +510,7 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
         rhs.m_capacity = 0;
         rhs.m_data = nullptr;
     }
+    return *this;
 }
 
 // compare
