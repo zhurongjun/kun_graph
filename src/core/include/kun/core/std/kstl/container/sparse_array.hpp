@@ -38,15 +38,20 @@ public:
     bool operator!=(const SparseArray& rhs) const;
 
     // getter
-    bool         isCompact() const;
-    SizeType     size() const;
-    SizeType     sparseSize() const;
-    SizeType     holeSize() const;
-    SizeType     capacity() const;
-    SizeType     slack() const;
-    Alloc&       allocator();
-    const Alloc& allocator() const;
-    bool         empty() const;
+    bool            isCompact() const;
+    SizeType        size() const;
+    SizeType        sparseSize() const;
+    SizeType        holeSize() const;
+    SizeType        capacity() const;
+    SizeType        bitArraySize();
+    SizeType        slack() const;
+    Alloc&          allocator();
+    const Alloc&    allocator() const;
+    bool            empty() const;
+    DataType*       data();
+    const DataType* data() const;
+    u32*            bitArray();
+    const u32*      bitArray() const;
 
     // validate
     bool hasData(SizeType idx) const;
@@ -494,6 +499,10 @@ template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::
 {
     return m_capacity;
 }
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::bitArraySize()
+{
+    return m_bit_array_size;
+}
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::slack() const
 {
     return m_capacity - m_size + m_num_hole;
@@ -501,6 +510,10 @@ template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::
 template<typename T, typename Alloc> KUN_INLINE Alloc&       SparseArray<T, Alloc>::allocator() { return m_alloc; }
 template<typename T, typename Alloc> KUN_INLINE const Alloc& SparseArray<T, Alloc>::allocator() const { return m_alloc; }
 template<typename T, typename Alloc> KUN_INLINE bool         SparseArray<T, Alloc>::empty() const { return (m_size - m_num_hole) == 0; }
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataType*       SparseArray<T, Alloc>::data() { return m_data; }
+template<typename T, typename Alloc> KUN_INLINE const typename SparseArray<T, Alloc>::DataType* SparseArray<T, Alloc>::data() const { return m_data; }
+template<typename T, typename Alloc> KUN_INLINE u32*       SparseArray<T, Alloc>::bitArray() { return m_bit_array; }
+template<typename T, typename Alloc> KUN_INLINE const u32* SparseArray<T, Alloc>::bitArray() const { return m_bit_array; }
 
 // validate
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::hasData(SizeType idx) const { return _getBit(idx); }
