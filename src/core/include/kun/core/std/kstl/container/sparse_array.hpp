@@ -1,48 +1,12 @@
 #pragma once
 #include "kun/core/config.h"
 #include "kun/core/std/types.hpp"
-#include "bit_iterator.hpp"
+#include "sparse_array_iterator.hpp"
 #include "kun/core/std/kstl/algo/intro_sort.hpp"
 #include "kun/core/std/kstl/algo/merge_sort.hpp"
 #include "kun/core/std/kstl/algo/remove.hpp"
 #include "kun/core/std/kstl/algo/find.hpp"
 #include "fwd.hpp"
-
-// SparseArray structs
-namespace kun
-{
-// data def
-template<typename T, typename TS> union SparseArrayData
-{
-    // free linked list
-    struct
-    {
-        TS prev;
-        TS next;
-    };
-
-    // data
-    T data;
-};
-// data info
-template<typename T, typename TS> struct SparseArrayDataInfo
-{
-    T* data;
-    TS index;
-
-    KUN_INLINE SparseArrayDataInfo()
-        : data(nullptr)
-        , index((TS)npos)
-    {
-    }
-    KUN_INLINE SparseArrayDataInfo(T* data, TS index)
-        : data(data)
-        , index(index)
-    {
-    }
-    KUN_INLINE operator bool() { return data != nullptr; }
-};
-}// namespace kun
 
 // SparseArray def
 namespace kun
@@ -54,6 +18,8 @@ public:
     using DataType = SparseArrayData<T, SizeType>;
     using DataInfo = SparseArrayDataInfo<T, SizeType>;
     using ConstDataInfo = SparseArrayDataInfo<const T, SizeType>;
+    using It = SparseArrayIt<T, SizeType, false>;
+    using CIt = SparseArrayIt<T, SizeType, true>;
 
     // ctor & dtor
     SparseArray(Alloc alloc = Alloc());
@@ -154,41 +120,10 @@ public:
     template<typename TP = Less<T>> void sortStable(TP&& p = TP());
 
     // support foreach
-    template<bool Const> class Iterator
-    {
-    public:
-        using ArrayRef = std::conditional_t<Const, const SparseArray&, SparseArray&>;
-        using ValueType = std::conditional_t<Const, const T, T>;
-        using BitItType = TrueBitIt<SizeType>;
-
-        KUN_INLINE explicit Iterator(ArrayRef array, SizeType start = 0)
-            : m_array(array)
-            , m_bit_it(array.m_bit_array, array.m_size, start)
-        {
-        }
-
-        KUN_INLINE Iterator& operator++()
-        {
-            ++m_bit_it;
-            return *this;
-        }
-        KUN_INLINE SizeType   index() const { return m_bit_it.index(); }
-        KUN_INLINE bool       operator==(const Iterator& rhs) const { return m_bit_it == rhs.m_bit_it && &m_array == &rhs.m_array; }
-        KUN_INLINE bool       operator!=(const Iterator& rhs) const { return !(*this == rhs); }
-        KUN_INLINE            operator bool() const { return (bool)m_bit_it; }
-        KUN_INLINE bool       operator!() const { return !(bool)*this; }
-        KUN_INLINE ValueType& operator*() const { return m_array[index()]; }
-        KUN_INLINE ValueType* operator->() const { return &m_array[index()]; }
-
-    private:
-        ArrayRef  m_array;
-        BitItType m_bit_it;
-    };
-
-    Iterator<false> begin();
-    Iterator<false> end();
-    Iterator<true>  begin() const;
-    Iterator<true>  end() const;
+    It  begin();
+    It  end();
+    CIt begin() const;
+    CIt end() const;
 
 private:
     // helper
@@ -1037,20 +972,20 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE void Spars
 }
 
 // support foreach
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<false> SparseArray<T, Alloc>::begin()
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::It SparseArray<T, Alloc>::begin()
 {
-    return Iterator<false>(*this);
+    return It(m_data, m_size, m_bit_array);
 }
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<false> SparseArray<T, Alloc>::end()
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::It SparseArray<T, Alloc>::end()
 {
-    return Iterator<false>(*this, m_size);
+    return It(m_data, m_size, m_bit_array, m_size);
 }
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<true> SparseArray<T, Alloc>::begin() const
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::CIt SparseArray<T, Alloc>::begin() const
 {
-    return Iterator<true>(*this);
+    return CIt(m_data, m_size, m_bit_array);
 }
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::template Iterator<true> SparseArray<T, Alloc>::end() const
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::CIt SparseArray<T, Alloc>::end() const
 {
-    return Iterator<true>(*this, m_size);
+    return CIt(m_data, m_size, m_bit_array, m_size);
 }
 }// namespace kun

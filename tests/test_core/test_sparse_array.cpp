@@ -699,4 +699,31 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(a.capacity(), 1000);
         for (Size i = 0; i < 500; ++i) { ASSERT_EQ(a[i], (499 - i) * 2); }
     }
+
+    // foreach
+    {
+        SparseArray<u32> a;
+        for (Size i = 0; i < 1000; ++i) { a.add(999 - i); }
+
+        Size count = 0;
+        for (u32 v : a)
+        {
+            ASSERT_LT(v, 1000);
+            ASSERT_GE(v, 0);
+            ASSERT_EQ(v, 999 - count);
+            ++count;
+        }
+        ASSERT_EQ(count, 1000);
+
+        const auto& b = a;
+        count = 0;
+        for (u32 v : a)
+        {
+            ASSERT_LT(v, 1000);
+            ASSERT_GE(v, 0);
+            ASSERT_EQ(v, 999 - count);
+            ++count;
+        }
+        ASSERT_EQ(count, 1000);
+    }
 }
