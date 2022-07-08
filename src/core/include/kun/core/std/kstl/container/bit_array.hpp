@@ -24,11 +24,11 @@ public:
 
     // copy & move ctor
     BitArray(const BitArray& other, Alloc alloc = Alloc());
-    BitArray(BitArray&& other);
+    BitArray(BitArray&& other) noexcept;
 
     // copy & move assign
     BitArray& operator=(const BitArray& rhs);
-    BitArray& operator=(BitArray&& rhs);
+    BitArray& operator=(BitArray&& rhs) noexcept;
 
     // compare
     bool operator==(const BitArray& rhs) const;
@@ -183,7 +183,7 @@ KUN_INLINE BitArray<Alloc>::BitArray(const BitArray& other, Alloc alloc)
         memory::memcpy(m_data, other.m_data, algo::calcNumWords(m_size) * sizeof(u32));
 }
 template<typename Alloc>
-KUN_INLINE BitArray<Alloc>::BitArray(BitArray&& other)
+KUN_INLINE BitArray<Alloc>::BitArray(BitArray&& other) noexcept
     : m_data(other.m_data)
     , m_size(other.m_size)
     , m_capacity(other.m_capacity)
@@ -207,7 +207,7 @@ template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(
 
     return *this;
 }
-template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(BitArray&& rhs)
+template<typename Alloc> KUN_INLINE BitArray<Alloc>& BitArray<Alloc>::operator=(BitArray&& rhs) noexcept
 {
     if (this != &rhs)
     {

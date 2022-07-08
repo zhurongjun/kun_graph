@@ -26,11 +26,11 @@ public:
 
     // copy & move
     Array(const Array& other, Alloc alloc = Alloc());
-    Array(Array&& other);
+    Array(Array&& other) noexcept;
 
     // assign & move assign
     Array& operator=(const Array& rhs);
-    Array& operator=(Array&& rhs);
+    Array& operator=(Array&& rhs) noexcept;
 
     // compare
     bool operator==(const Array& rhs) const;
@@ -276,7 +276,7 @@ KUN_INLINE Array<T, Alloc>::Array(const Array& other, Alloc alloc)
     memory::copyItems(m_data, other.data(), other.size());
 }
 template<typename T, typename Alloc>
-KUN_INLINE Array<T, Alloc>::Array(Array&& other)
+KUN_INLINE Array<T, Alloc>::Array(Array&& other) noexcept
     : m_data(other.m_data)
     , m_size(other.m_size)
     , m_capacity(other.m_capacity)
@@ -301,7 +301,7 @@ template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>
     }
     return *this;
 }
-template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>::operator=(Array&& rhs)
+template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>::operator=(Array&& rhs) noexcept
 {
     if (this != &rhs)
     {

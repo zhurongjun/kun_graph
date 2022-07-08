@@ -27,11 +27,11 @@ public:
 
     // copy & move
     SparseArray(const SparseArray& other, Alloc alloc = Alloc());
-    SparseArray(SparseArray&& other);
+    SparseArray(SparseArray&& other) noexcept;
 
     // assign & move assign
     SparseArray& operator=(const SparseArray& rhs);
-    SparseArray& operator=(SparseArray&& rhs);
+    SparseArray& operator=(SparseArray&& rhs) noexcept;
 
     // compare
     bool operator==(const SparseArray& rhs) const;
@@ -366,7 +366,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(const SparseArray& other, Alloc al
     (*this) = other;
 }
 template<typename T, typename Alloc>
-KUN_INLINE SparseArray<T, Alloc>::SparseArray(SparseArray&& other)
+KUN_INLINE SparseArray<T, Alloc>::SparseArray(SparseArray&& other) noexcept
     : m_bit_array(other.m_bit_array)
     , m_bit_array_size(other.m_bit_array_size)
     , m_num_hole(other.m_num_hole)
@@ -428,7 +428,7 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
     }
     return *this;
 }
-template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArray<T, Alloc>::operator=(SparseArray&& rhs)
+template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArray<T, Alloc>::operator=(SparseArray&& rhs) noexcept
 {
     if (this != &rhs)
     {
