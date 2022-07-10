@@ -1,6 +1,7 @@
 #pragma once
 #include "kun/core/config.h"
 #include "kun/core/std/types.hpp"
+#include "kun/core/std/kstl/algo/functor.hpp"
 #include "sparse_array.hpp"
 #include "fwd.hpp"
 
@@ -10,17 +11,16 @@ namespace kun
 template<typename T, bool MultiKey> struct USetConfigDefault
 {
     using KeyType = T;
+    using KeyMapperType = MapFwd<T>;
     using HashType = Size;
+    using HasherType = Hash<KeyType>;
+    using ComparerType = Equal<KeyType>;
 
     static constexpr bool multi_key = MultiKey;
-
-    KUN_INLINE static const KeyType& key(const T& v) { return v; }
-    KUN_INLINE static bool           equal(const KeyType& a, const KeyType& b) { return a == b; }
-    KUN_INLINE static HashType       hash(const KeyType& k) { return Hash<KeyType>()(k); }
 };
 }// namespace kun
 
-// USet element
+// USet data
 namespace kun
 {
 template<typename T, typename TS, typename HashType> struct USetData
@@ -28,6 +28,29 @@ template<typename T, typename TS, typename HashType> struct USetData
     T          data;
     HashType   hash;
     mutable TS next;
+};
+// data info
+template<typename T, typename TS> struct USetDataInfo
+{
+    T*   data;
+    TS   index;
+    bool already_exist;// used by add or emplace, always be false in other case
+
+    KUN_INLINE USetDataInfo()
+        : data(nullptr)
+        , index((TS)npos)
+        , already_exist(false)
+    {
+    }
+    KUN_INLINE USetDataInfo(T* data, TS index, bool already_exist = false)
+        : data(data)
+        , index(index)
+        , already_exist(already_exist)
+    {
+    }
+    KUN_INLINE    operator bool() { return data != nullptr; }
+    KUN_INLINE T& operator*() const { return *data; }
+    KUN_INLINE T* operator->() const { return data; }
 };
 }// namespace kun
 
@@ -40,7 +63,12 @@ public:
     using SizeType = typename Alloc::SizeType;
     using HashType = typename Config::HashType;
     using KeyType = typename Config::KeyType;
+    using keyMapperType = typename Config::KeyMapperType;
+    using HasherType = typename Config::HasherType;
+    using ComparerType = typename Config::ComparerType;
     using DataType = USetData<T, SizeType, HashType>;
+    using DataInfo = USetDataInfo<T, SizeType>;
+    using CDataInfo = USetDataInfo<const T, SizeType>;
     using DataArr = SparseArray<DataType, Alloc>;
 
 public:
@@ -96,35 +124,95 @@ public:
     void compactStable();
 
     // hash op
-    bool needRehash();
-    void rehash();
-    void rehashIfNeed();
+    bool           needRehash();
+    void           rehash();
+    bool           rehashIfNeed();
+    KeyType&       keyOf(T& v) const;
+    const KeyType& keyOf(const T& v) const;
+    bool           keyEqual(const T& a, const T& b) const;
+    HashType       hashOf(const T& v) const;
 
-    // add
+    // add (add or assign)
+    DataInfo add(const T& v);
+    DataInfo add(T&& v);
+    DataInfo addHashed(const T& v, HashType hash);
+    DataInfo addHashed(T&& v, HashType hash);
+    DataInfo addAnyway(const T& v);
+    DataInfo addAnyway(T&& v);
+    DataInfo addAnywayHashed(const T& v, HashType hash);
+    DataInfo addAnywayHashed(T&& v, HashType hash);
 
-    // add as
+    // try add (first check, then add, never assign)
+    DataInfo tryAdd(const T& v);
+    DataInfo tryAdd(T&& v);
+    DataInfo tryAddHashed(const T& v, HashType hash);
+    DataInfo tryAddHashed(T&& v, HashType hash);
+    template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
+    DataInfo tryAddAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer());
 
     // emplace
+    template<typename... Args> DataInfo emplace(Args&&... args);
+    template<typename... Args> DataInfo emplaceHashed(HashType hash, Args&&... args);
+    template<typename... Args> DataInfo emplaceAnyway(Args&&... args);
+    template<typename... Args> DataInfo emplaceAnywayHashed(HashType hash, Args&&... args);
 
     // append
+    void append(const USet& set);
+    void append(std::initializer_list<T> init_list);
+    void append(T* p, SizeType n);
 
     // remove
+    SizeType remove(const KeyType& key);
+    SizeType removeHashed(const KeyType& key, HashType hash);
 
     // remove as
-
-    // use as sparse array? remove all & remove by
+    template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
+    SizeType removeAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer());
 
     // modify
+    T&       operator[](SizeType index);
+    const T& operator[](SizeType index) const;
 
     // find
+    DataInfo  find(const KeyType& key);
+    CDataInfo find(const KeyType& key) const;
+    DataInfo  findHashed(const KeyType& key, HashType hash);
+    CDataInfo findHashed(const KeyType& key, HashType hash) const;
 
     // find as
+    template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
+    DataInfo findAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer());
+    template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
+    CDataInfo findAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer()) const;
 
     // contain
+    bool contain(const KeyType& key) const;
+    bool containHashed(const KeyType& key, HashType hash) const;
+
+    // contain as
+    template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
+    bool containAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer()) const;
 
     // sort
+    template<typename TP = Less<T>> void sort(TP&& p = TP());
+    template<typename TP = Less<T>> void sortStable(TP&& p = TP());
 
-    // static? set ops
+    // set ops
+    USet operator&(const USet& rhs) const; // intersect
+    USet operator|(const USet& rhs) const; // union
+    USet operator^(const USet& rhs) const; // difference
+    USet operator-(const USet& rhs) const; // sub
+    bool isSubsetOf(const USet& rhs) const;// sub set
+
+    // support foreach
+
+private:
+    // helpers
+    SizeType  _calcBucketSize(SizeType data_size) const;
+    void      _cleanBucket() const;
+    SizeType  _bucketIndex(SizeType hash) const;
+    SizeType& _bucketData(SizeType hash) const;
+    DataInfo  _linkToBucketOrAssign(SizeType index, DataType& data);
 
 private:
     mutable SizeType* m_bucket;

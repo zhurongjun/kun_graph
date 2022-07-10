@@ -35,7 +35,9 @@ template<typename T, typename TS> struct SparseArrayDataInfo
         , index(index)
     {
     }
-    KUN_INLINE operator bool() { return data != nullptr; }
+    KUN_INLINE    operator bool() const { return data != nullptr; }
+    KUN_INLINE T& operator*() const { return *data; }
+    KUN_INLINE T* operator->() const { return data; }
 };
 }// namespace kun
 

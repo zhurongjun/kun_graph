@@ -17,7 +17,7 @@ public:
     using SizeType = typename Alloc::SizeType;
     using DataType = SparseArrayData<T, SizeType>;
     using DataInfo = SparseArrayDataInfo<T, SizeType>;
-    using ConstDataInfo = SparseArrayDataInfo<const T, SizeType>;
+    using CDataInfo = SparseArrayDataInfo<const T, SizeType>;
     using It = SparseArrayIt<T, SizeType, false>;
     using CIt = SparseArrayIt<T, SizeType, true>;
 
@@ -114,16 +114,16 @@ public:
     const T& operator[](SizeType index) const;
 
     // find
-    template<typename TK> DataInfo      find(const TK& v);
-    template<typename TK> DataInfo      findLast(const TK& v);
-    template<typename TK> ConstDataInfo find(const TK& v) const;
-    template<typename TK> ConstDataInfo findLast(const TK& v) const;
+    template<typename TK> DataInfo  find(const TK& v);
+    template<typename TK> DataInfo  findLast(const TK& v);
+    template<typename TK> CDataInfo find(const TK& v) const;
+    template<typename TK> CDataInfo findLast(const TK& v) const;
 
     // find if
-    template<typename TP> DataInfo      findIf(TP&& p);
-    template<typename TP> DataInfo      findLastIf(TP&& p);
-    template<typename TP> ConstDataInfo findIf(TP&& p) const;
-    template<typename TP> ConstDataInfo findLastIf(TP&& p) const;
+    template<typename TP> DataInfo  findIf(TP&& p);
+    template<typename TP> DataInfo  findLastIf(TP&& p);
+    template<typename TP> CDataInfo findIf(TP&& p) const;
+    template<typename TP> CDataInfo findLastIf(TP&& p) const;
 
     // contain
     template<typename TK> bool contain(const TK& v) const;
@@ -1046,13 +1046,13 @@ KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::findL
 }
 template<typename T, typename Alloc>
 template<typename TK>
-KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::find(const TK& v) const
+KUN_INLINE typename SparseArray<T, Alloc>::CDataInfo SparseArray<T, Alloc>::find(const TK& v) const
 {
     return findIf([&v](const T& a) { return a == v; });
 }
 template<typename T, typename Alloc>
 template<typename TK>
-KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::findLast(const TK& v) const
+KUN_INLINE typename SparseArray<T, Alloc>::CDataInfo SparseArray<T, Alloc>::findLast(const TK& v) const
 {
     return findLastIf([&v](const T& a) { return a == v; });
 }
@@ -1092,7 +1092,7 @@ KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::findL
 }
 template<typename T, typename Alloc>
 template<typename TP>
-KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::findIf(TP&& p) const
+KUN_INLINE typename SparseArray<T, Alloc>::CDataInfo SparseArray<T, Alloc>::findIf(TP&& p) const
 {
     for (SizeType i = 0; i < m_size; ++i)
     {
@@ -1101,15 +1101,15 @@ KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::
             auto& data = m_data[i].data;
             if (p(data))
             {
-                return ConstDataInfo(&data, i);
+                return CDataInfo(&data, i);
             }
         }
     }
-    return ConstDataInfo();
+    return CDataInfo();
 }
 template<typename T, typename Alloc>
 template<typename TP>
-KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::findLastIf(TP&& p) const
+KUN_INLINE typename SparseArray<T, Alloc>::CDataInfo SparseArray<T, Alloc>::findLastIf(TP&& p) const
 {
     for (SizeType i(m_size - 1), n(m_size); n; --i, --n)
     {
@@ -1118,11 +1118,11 @@ KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::
             auto& data = m_data[i].data;
             if (p(data))
             {
-                return ConstDataInfo(&data, i);
+                return CDataInfo(&data, i);
             }
         }
     }
-    return ConstDataInfo();
+    return CDataInfo();
 }
 
 // contain

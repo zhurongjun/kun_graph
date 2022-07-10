@@ -10,7 +10,6 @@
 // Array def
 namespace kun
 {
-// TODO. consider support range
 template<typename T, typename Alloc> class Array
 {
 public:

@@ -3,6 +3,16 @@
 #include "kun/core/std/types.hpp"
 #include "kun/core/std/traits.hpp"
 
+// map functor
+namespace kun
+{
+template<typename T> struct MapFwd
+{
+    KUN_INLINE constexpr T&       operator()(T& v) const { return v; }
+    KUN_INLINE constexpr const T& operator()(const T& v) const { return v; }
+};
+}// namespace kun
+
 // compare functors
 namespace kun
 {
@@ -11,14 +21,14 @@ namespace kun
     {                                                                                                                                                \
         KUN_INLINE constexpr bool operator()(const T& a, const T& b) const                                                                           \
         {                                                                                                                                            \
-            return a op b;                                                                                                                            \
+            return a op b;                                                                                                                           \
         }                                                                                                                                            \
     };                                                                                                                                               \
     template<> struct name<void>                                                                                                                     \
     {                                                                                                                                                \
         template<typename A, typename B> KUN_INLINE constexpr bool operator()(A&& a, B&& b) const                                                    \
         {                                                                                                                                            \
-            return std::forward<A>(a) op std::forward<B>(b);                                                                                          \
+            return std::forward<A>(a) op std::forward<B>(b);                                                                                         \
         }                                                                                                                                            \
     };
 
