@@ -23,6 +23,10 @@ public:
 
     // ctor & dtor
     SparseArray(Alloc alloc = Alloc());
+    SparseArray(SizeType size, Alloc alloc = Alloc());
+    SparseArray(SizeType size, const T& v, Alloc alloc = Alloc());
+    SparseArray(const T* p, SizeType n, Alloc alloc = Alloc());
+    SparseArray(std::initializer_list<T> init_list, Alloc alloc = Alloc());
     ~SparseArray();
 
     // copy & move
@@ -348,6 +352,95 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(Alloc alloc)
     , m_data(nullptr)
     , m_alloc(std::move(alloc))
 {
+}
+template<typename T, typename Alloc>
+KUN_INLINE SparseArray<T, Alloc>::SparseArray(SizeType size, Alloc alloc)
+    : m_bit_array(nullptr)
+    , m_bit_array_size(0)
+    , m_num_hole(0)
+    , m_first_hole(npos)
+    , m_size(0)
+    , m_capacity(0)
+    , m_data(nullptr)
+    , m_alloc(std::move(alloc))
+{
+    if (size)
+    {
+        // resize
+        _resizeMemory(size);
+        m_size = size;
+        _setBitRange(0, size, true);
+
+        // call ctor
+        for (SizeType i = 0; i < size; ++i) { new (&m_data[i].data) T(); }
+    }
+}
+template<typename T, typename Alloc>
+KUN_INLINE SparseArray<T, Alloc>::SparseArray(SizeType size, const T& v, Alloc alloc)
+    : m_bit_array(nullptr)
+    , m_bit_array_size(0)
+    , m_num_hole(0)
+    , m_first_hole(npos)
+    , m_size(0)
+    , m_capacity(0)
+    , m_data(nullptr)
+    , m_alloc(std::move(alloc))
+{
+    if (size)
+    {
+        // resize
+        _resizeMemory(size);
+        m_size = size;
+        _setBitRange(0, size, true);
+
+        // call ctor
+        for (SizeType i = 0; i < size; ++i) { new (&m_data[i].data) T(v); }
+    }
+}
+template<typename T, typename Alloc>
+KUN_INLINE SparseArray<T, Alloc>::SparseArray(const T* p, SizeType n, Alloc alloc)
+    : m_bit_array(nullptr)
+    , m_bit_array_size(0)
+    , m_num_hole(0)
+    , m_first_hole(npos)
+    , m_size(0)
+    , m_capacity(0)
+    , m_data(nullptr)
+    , m_alloc(std::move(alloc))
+{
+    if (n)
+    {
+        // resize
+        _resizeMemory(n);
+        m_size = n;
+        _setBitRange(0, n, true);
+
+        // call ctor
+        for (SizeType i = 0; i < n; ++i) { new (&m_data[i].data) T(p[n]); }
+    }
+}
+template<typename T, typename Alloc>
+KUN_INLINE SparseArray<T, Alloc>::SparseArray(std::initializer_list<T> init_list, Alloc alloc)
+    : m_bit_array(nullptr)
+    , m_bit_array_size(0)
+    , m_num_hole(0)
+    , m_first_hole(npos)
+    , m_size(0)
+    , m_capacity(0)
+    , m_data(nullptr)
+    , m_alloc(std::move(alloc))
+{
+    SizeType size = init_list.size();
+    if (size)
+    {
+        // resize
+        _resizeMemory(size);
+        m_size = size;
+        _setBitRange(0, size, true);
+
+        // call ctor
+        for (SizeType i = 0; i < size; ++i) { new (&m_data[i].data) T(*(init_list.begin() + i)); }
+    }
 }
 template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>::~SparseArray() { release(); }
 

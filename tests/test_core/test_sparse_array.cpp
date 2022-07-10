@@ -12,12 +12,47 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(a.sparseSize(), 0);
         ASSERT_EQ(a.holeSize(), 0);
         ASSERT_EQ(a.capacity(), 0);
+
+        SparseArray<u32> b(100);
+        ASSERT_EQ(b.size(), 100);
+        ASSERT_EQ(b.sparseSize(), 100);
+        ASSERT_EQ(b.holeSize(), 0);
+        ASSERT_GE(b.capacity(), 100);
+        for (Size i = 0; i < 100; ++i) { ASSERT_TRUE(b.hasData(i)); }
+
+        SparseArray<u32> c(100, 114514);
+        ASSERT_EQ(c.size(), 100);
+        ASSERT_EQ(c.sparseSize(), 100);
+        ASSERT_EQ(c.holeSize(), 0);
+        ASSERT_GE(c.capacity(), 100);
+        for (Size i = 0; i < 100; ++i)
+        {
+            ASSERT_TRUE(c.hasData(i));
+            ASSERT_EQ(c[i], 114514);
+        }
+
+        SparseArray<u32> d({1, 1, 4, 5, 1, 4});
+        ASSERT_EQ(d.size(), 6);
+        ASSERT_EQ(d.sparseSize(), 6);
+        ASSERT_EQ(d.holeSize(), 0);
+        ASSERT_GE(d.capacity(), 6);
+        ASSERT_TRUE(d.hasData(0));
+        ASSERT_EQ(d[0], 1);
+        ASSERT_TRUE(d.hasData(1));
+        ASSERT_EQ(d[1], 1);
+        ASSERT_TRUE(d.hasData(2));
+        ASSERT_EQ(d[2], 4);
+        ASSERT_TRUE(d.hasData(3));
+        ASSERT_EQ(d[3], 5);
+        ASSERT_TRUE(d.hasData(4));
+        ASSERT_EQ(d[4], 1);
+        ASSERT_TRUE(d.hasData(5));
+        ASSERT_EQ(d[5], 4);
     }
 
     // copy & move
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
         ASSERT_EQ(a.size(), 6);
         ASSERT_EQ(a.sparseSize(), 6);
         ASSERT_EQ(a.holeSize(), 0);
@@ -61,8 +96,7 @@ TEST(TestCore, test_sparse_array)
 
     // copy & move(with hole)
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
         a.removeAt(1);
         a.removeAt(4);
         ASSERT_EQ(a.size(), 4);
@@ -133,8 +167,9 @@ TEST(TestCore, test_sparse_array)
 
     // assign & move assign
     {
-        SparseArray<u32> a, b, c;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> b({114514, 114514, 1, 1, 4});
+        SparseArray<u32> c({1, 1, 4, 514, 514, 514});
         ASSERT_EQ(a.size(), 6);
         ASSERT_EQ(a.sparseSize(), 6);
         ASSERT_EQ(a.holeSize(), 0);
@@ -146,7 +181,6 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(a[4], 1);
         ASSERT_EQ(a[5], 4);
 
-        b.append({114514, 114514, 1, 1, 4});
         b = a;
         ASSERT_EQ(b.size(), 6);
         ASSERT_EQ(b.sparseSize(), 6);
@@ -159,7 +193,6 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(b[4], 1);
         ASSERT_EQ(b[5], 4);
 
-        c.append({1, 1, 4, 514, 514, 514});
         auto old_capacity = a.capacity();
         c = std::move(a);
         ASSERT_EQ(a.size(), 0);
@@ -180,8 +213,9 @@ TEST(TestCore, test_sparse_array)
 
     // assign & move assign(with hole)
     {
-        SparseArray<u32> a, b, c;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> b({114514, 114514, 1, 1, 4});
+        SparseArray<u32> c({1, 1, 4, 514, 514, 514});
         a.removeAt(1);
         a.removeAt(4);
         ASSERT_EQ(a.size(), 4);
@@ -195,7 +229,6 @@ TEST(TestCore, test_sparse_array)
         // ASSERT_EQ(a[4], 1);
         ASSERT_EQ(a[5], 4);
 
-        b.append({114514, 114514, 1, 1, 4});
         b = a;
         ASSERT_EQ(b.size(), 4);
         ASSERT_EQ(b.sparseSize(), 6);
@@ -220,7 +253,6 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(b[4], 2);
         ASSERT_EQ(b[5], 4);
 
-        c.append({1, 1, 4, 514, 514, 514});
         auto old_capacity = a.capacity();
         c = std::move(a);
         ASSERT_EQ(a.size(), 0);
@@ -254,10 +286,9 @@ TEST(TestCore, test_sparse_array)
 
     // compare
     {
-        SparseArray<u32> a, b, c;
-        a.append({1, 1, 4, 5, 1, 4});
-        b.append({114, 114, 514, 114, 514, 114});
-        c.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> b({114, 114, 514, 114, 514, 114});
+        SparseArray<u32> c({1, 1, 4, 5, 1, 4});
 
         ASSERT_EQ(a, c);
         ASSERT_NE(a, b);
@@ -273,8 +304,7 @@ TEST(TestCore, test_sparse_array)
 
     // validate
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
         a.removeAt(0);
         a.removeAt(2);
         a.removeAt(4);
@@ -301,8 +331,7 @@ TEST(TestCore, test_sparse_array)
 
     // memory op
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
         a.removeAt(1);
         a.removeAt(5);
         ASSERT_EQ(a.size(), 4);
@@ -375,9 +404,8 @@ TEST(TestCore, test_sparse_array)
 
     // add
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
-        auto info = a.add(10);
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
+        auto             info = a.add(10);
         *info.data = 100;
         ASSERT_EQ(a.size(), 7);
         ASSERT_EQ(a.sparseSize(), 7);
@@ -416,8 +444,7 @@ TEST(TestCore, test_sparse_array)
 
     // add at
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
         a.removeAt(1);
         a.removeAt(4);
         a.addAt(1, 114514);
@@ -442,8 +469,7 @@ TEST(TestCore, test_sparse_array)
 
     // emplace
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({{1, 1, 4, 5, 1, 4}});
         a.removeAt(1);
         a.removeAt(4);
         a.emplace(114514);
@@ -514,8 +540,7 @@ TEST(TestCore, test_sparse_array)
 
     // remove
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
         a.removeAt(1);
         a.removeAt(4);
         ASSERT_EQ(a.size(), 4);
@@ -593,8 +618,7 @@ TEST(TestCore, test_sparse_array)
 
     // remove if
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
         a.removeIf([](const u32& a) { return a > 3; });
         ASSERT_EQ(a.size(), 5);
         ASSERT_EQ(a.sparseSize(), 6);
@@ -655,8 +679,7 @@ TEST(TestCore, test_sparse_array)
 
     // contain
     {
-        SparseArray<u32> a;
-        a.append({1, 1, 4, 5, 1, 4});
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
 
         ASSERT_TRUE(a.contain(5));
         a.removeAll(5);
@@ -670,9 +693,8 @@ TEST(TestCore, test_sparse_array)
 
     // sort
     {
-        SparseArray<u32> a;
-        a.reserve(1000);
-        for (Size i = 0; i < 1000; ++i) { a.add(999 - i); }
+        SparseArray<u32> a(1000);
+        for (Size i = 0; i < 1000; ++i) { a[i] = 999 - i; }
         a.removeAllIf([](const u32& n) { return n % 2 == 1; });
         ASSERT_EQ(a.size(), 500);
         ASSERT_EQ(a.sparseSize(), 1000);
@@ -702,8 +724,8 @@ TEST(TestCore, test_sparse_array)
 
     // foreach
     {
-        SparseArray<u32> a;
-        for (Size i = 0; i < 1000; ++i) { a.add(999 - i); }
+        SparseArray<u32> a(1000);
+        for (Size i = 0; i < 1000; ++i) { a[i] = 999 - i; }
 
         Size count = 0;
         for (u32 v : a)
