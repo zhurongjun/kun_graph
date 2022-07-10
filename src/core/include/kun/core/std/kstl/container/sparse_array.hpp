@@ -74,6 +74,7 @@ public:
     void shrink();
     void compact();
     void compactStable();
+    void compactTop();
 
     // add
     DataInfo add(const T& v);
@@ -765,6 +766,41 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::comp
         m_size = compacted_index;
     }
 }
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::compactTop()
+{
+    if (!isCompact())
+    {
+        for (SizeType i(m_size - 1), n(m_size); n; --i, --n)
+        {
+            DataType& data = m_data[i];
+
+            if (isHole(i))
+            {
+                // remove from freelist
+                --m_num_hole;
+                if (m_first_hole == i)
+                {
+                    m_first_hole = data.next;
+                }
+                if (data.next != npos)
+                {
+                    m_data[data.next].prev = data.prev;
+                }
+                if (data.prev != npos)
+                {
+                    m_data[data.prev].next = data.next;
+                }
+
+                // update size
+                --m_size;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+}
 
 // add
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::add(const T& v)
@@ -779,7 +815,7 @@ template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::
 
     if (m_num_hole)
     {
-        // remove and use first index from free list
+        // remove and use first index from freelist
         index = m_first_hole;
         m_first_hole = m_data[m_first_hole].next;
         --m_num_hole;
@@ -828,7 +864,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::addA
 
     DataType& data = m_data[idx];
 
-    // remove from free list
+    // remove from freelist
     --m_num_hole;
     if (m_first_hole == idx)
     {
@@ -910,7 +946,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::remo
     {
         DataType& data = m_data[index];
 
-        // link to free list
+        // link to freelist
         if (m_num_hole)
         {
             m_data[m_first_hole].prev = index;
@@ -1041,7 +1077,7 @@ template<typename T, typename Alloc>
 template<typename TP>
 KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::findLastIf(TP&& p)
 {
-    for (SizeType i = m_size - 1; i >= 0; --i)
+    for (SizeType i(m_size - 1), n(m_size); n; --i, --n)
     {
         if (hasData(i))
         {
@@ -1075,7 +1111,7 @@ template<typename T, typename Alloc>
 template<typename TP>
 KUN_INLINE typename SparseArray<T, Alloc>::ConstDataInfo SparseArray<T, Alloc>::findLastIf(TP&& p) const
 {
-    for (SizeType i = m_size - 1; i >= 0; --i)
+    for (SizeType i(m_size - 1), n(m_size); n; --i, --n)
     {
         if (hasData(i))
         {

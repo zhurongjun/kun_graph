@@ -102,7 +102,7 @@ template<typename TS> KUN_INLINE void setBitRange(u32* data, TS start, TS num, b
 template<typename TS> KUN_INLINE TS findBit(const u32* data, TS num, bool v)
 {
     const TS dword_count = calcNumWords(num);
-    TS dword_index = 0;
+    TS       dword_index = 0;
 
     // test to skip head
     const u32 test = v ? DWORDEmptyMask : DWORDFullMask;
@@ -128,8 +128,9 @@ template<typename TS> KUN_INLINE TS findLastBit(const u32* data, TS num, bool v)
     if (num != 0)
     {
         // init data
-        TS dword_index = calcNumWords(num) - 1;
-        u32 mask = lastWordMask(num);
+        TS        dword_count = calcNumWords(num);
+        TS        dword_index = dword_count - 1;
+        u32       mask = lastWordMask(num);
         const u32 test = v ? DWORDEmptyMask : DWORDFullMask;
 
         // skip tail
@@ -137,11 +138,15 @@ template<typename TS> KUN_INLINE TS findLastBit(const u32* data, TS num, bool v)
         {
             --dword_index;
             mask = DWORDFullMask;
-            while (dword_index >= 0 && data[dword_index] == test) --dword_index;
+            while (dword_count && data[dword_index] == test)
+            {
+                --dword_count;
+                --dword_index;
+            }
         }
 
         // now find bit index
-        if (dword_index >= 0)
+        if (dword_count)
         {
             const u32 bits = (v ? data[dword_index] : ~data[dword_index]) & mask;
             KUN_Assert(bits != 0);
@@ -157,7 +162,7 @@ template<typename TS> KUN_INLINE TS findLastBit(const u32* data, TS num, bool v)
 template<typename TS> KUN_INLINE TS findAndSetFirstZeroBit(u32* data, TS num, TS start_idx)
 {
     const TS dword_count = calcNumWords(num);
-    TS dword_index = divFloor(start_idx, (TS)NumBitsPerDWORD);
+    TS       dword_index = divFloor(start_idx, (TS)NumBitsPerDWORD);
 
     // skip big non-zero word
     while (dword_index < dword_count && data[dword_index] == DWORDFullMask) { ++dword_index; }
@@ -168,7 +173,7 @@ template<typename TS> KUN_INLINE TS findAndSetFirstZeroBit(u32* data, TS num, TS
         const u32 bits = ~(data[dword_index]);
         KUN_Assert(bits != 0);
         const u32 lowest_bit = (bits) & (-(i32)bits);
-        const TS lowest_bit_index = bitScan(bits) + (dword_index << NumBitsPerDWORDLogTwo);
+        const TS  lowest_bit_index = bitScan(bits) + (dword_index << NumBitsPerDWORDLogTwo);
         if (lowest_bit_index < num)
         {
             data[dword_index] |= lowest_bit;
@@ -208,8 +213,8 @@ template<typename TS> KUN_INLINE TS FindAndSetLastZeroBit(u32* data, TS num)
 template<typename TS> KUN_INLINE void setBit(u32* data, TS index, bool v)
 {
     auto word_idx = index >> NumBitsPerDWORDLogTwo;
-    u32 word = data[word_idx];
-    u32 mask = 1 << (index & PerDWORDMask);
+    u32  word = data[word_idx];
+    u32  mask = 1 << (index & PerDWORDMask);
     data[word_idx] = v ? word | mask : word & ~mask;
 }
 template<typename TS> KUN_INLINE bool getBit(u32* data, TS index)

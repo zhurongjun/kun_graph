@@ -447,6 +447,30 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(a[1], 4);
         ASSERT_EQ(a[2], 1);
         ASSERT_EQ(a[3], 4);
+
+        a.clear();
+        a.append({1, 1, 4, 5, 1, 4});
+        a.append({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(3);
+        a.removeAt(6, 6);
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 12);
+        ASSERT_EQ(a.holeSize(), 8);
+        ASSERT_GE(a.capacity(), 12);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
+        a.compactTop();
+        ASSERT_EQ(a.size(), 4);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 2);
+        ASSERT_GE(a.capacity(), 12);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
     }
 
     // add
