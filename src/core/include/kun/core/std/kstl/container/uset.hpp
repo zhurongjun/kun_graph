@@ -137,12 +137,14 @@ public:
     DataInfo add(T&& v);
     DataInfo addHashed(const T& v, HashType hash);
     DataInfo addHashed(T&& v, HashType hash);
+
+    // add anyway (add but never check existence)
     DataInfo addAnyway(const T& v);
     DataInfo addAnyway(T&& v);
     DataInfo addAnywayHashed(const T& v, HashType hash);
     DataInfo addAnywayHashed(T&& v, HashType hash);
 
-    // try add (first check, then add, never assign)
+    // try add (first check existence, then add, never assign)
     DataInfo tryAdd(const T& v);
     DataInfo tryAdd(T&& v);
     DataInfo tryAddHashed(const T& v, HashType hash);
@@ -164,10 +166,14 @@ public:
     // remove
     SizeType remove(const KeyType& key);
     SizeType removeHashed(const KeyType& key, HashType hash);
+    SizeType remvoeAll(const KeyType& key);                     // [multi set extend]
+    SizeType removeAllHashed(const KeyType& key, HashType hash);// [multi set extend]
 
     // remove as
     template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
     SizeType removeAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer());
+    template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
+    SizeType removeAllAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer());// [multi set extend]
 
     // modify
     T&       operator[](SizeType index);
@@ -186,12 +192,16 @@ public:
     CDataInfo findAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer()) const;
 
     // contain
-    bool contain(const KeyType& key) const;
-    bool containHashed(const KeyType& key, HashType hash) const;
+    bool     contain(const KeyType& key) const;
+    bool     containHashed(const KeyType& key, HashType hash) const;
+    SizeType count(const KeyType& key) const;                     // [multi set extend]
+    SizeType countHashed(const KeyType& key, HashType hash) const;// [multi set extend]
 
     // contain as
     template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
     bool containAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer()) const;
+    template<typename AsType, typename AsHasher = Hash<AsType>, typename AsComparer = Equal<>>
+    SizeType countAs(AsType&& v, AsHasher&& hasher = AsHasher(), AsComparer&& comparer = AsComparer()) const;// [multi set extend]
 
     // sort
     template<typename TP = Less<T>> void sort(TP&& p = TP());
