@@ -48,6 +48,25 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(d[4], 1);
         ASSERT_TRUE(d.hasData(5));
         ASSERT_EQ(d[5], 4);
+
+        u32              data[] = {1, 1, 4, 5, 1, 4};
+        SparseArray<u32> e(data, 6);
+        ASSERT_EQ(e.size(), 6);
+        ASSERT_EQ(e.sparseSize(), 6);
+        ASSERT_EQ(e.holeSize(), 0);
+        ASSERT_GE(e.capacity(), 6);
+        ASSERT_TRUE(e.hasData(0));
+        ASSERT_EQ(e[0], 1);
+        ASSERT_TRUE(e.hasData(1));
+        ASSERT_EQ(e[1], 1);
+        ASSERT_TRUE(e.hasData(2));
+        ASSERT_EQ(e[2], 4);
+        ASSERT_TRUE(e.hasData(3));
+        ASSERT_EQ(e[3], 5);
+        ASSERT_TRUE(e.hasData(4));
+        ASSERT_EQ(e[4], 1);
+        ASSERT_TRUE(e.hasData(5));
+        ASSERT_EQ(e[5], 4);
     }
 
     // copy & move
@@ -282,6 +301,34 @@ TEST(TestCore, test_sparse_array)
         ASSERT_EQ(c[4], 2);
         ASSERT_EQ(c[5], 4);
         ASSERT_EQ(c[6], 1);
+    }
+
+    // special assign
+    {
+        u32 data[100];
+        for (Size i = 0; i < 100; ++i) { data[i] = 99 - i; }
+
+        SparseArray<u32> a({1, 1, 4, 5, 1, 4});
+        a.removeAt(1);
+        a.removeAt(4);
+        a.assign(data, 50);
+        ASSERT_EQ(a.size(), 50);
+        ASSERT_EQ(a.sparseSize(), 50);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_GE(a.capacity(), 50);
+        for (Size i = 0; i < 50; ++i) { a[i] = 99 - i; }
+
+        a.assign({1, 1, 4, 5, 1, 4});
+        ASSERT_EQ(a.size(), 6);
+        ASSERT_EQ(a.sparseSize(), 6);
+        ASSERT_EQ(a.holeSize(), 0);
+        ASSERT_GE(a.capacity(), 50);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 1);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
     }
 
     // compare

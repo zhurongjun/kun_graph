@@ -62,7 +62,7 @@ TEST(TestCore, test_array)
         ASSERT_EQ(c.data(), old_data);
     }
 
-    // copy assign & move assign
+    // assign & move assign
     {
         Array<u32> a(100, 114514), b, c;
 
@@ -81,6 +81,27 @@ TEST(TestCore, test_array)
         ASSERT_EQ(c.size(), old_size);
         ASSERT_EQ(c.capacity(), old_capacity);
         ASSERT_EQ(c.data(), old_data);
+    }
+
+    // spacial assign
+    {
+        Array<u32> a(100, 114514);
+        Array<u32> b(200, 114);
+
+        a.assign({1, 1, 4, 5, 1, 4});
+        ASSERT_EQ(a.size(), 6);
+        ASSERT_GE(a.capacity(), 100);
+        ASSERT_EQ(a[0], 1);
+        ASSERT_EQ(a[1], 1);
+        ASSERT_EQ(a[2], 4);
+        ASSERT_EQ(a[3], 5);
+        ASSERT_EQ(a[4], 1);
+        ASSERT_EQ(a[5], 4);
+
+        a.assign(b.data(), b.size());
+        ASSERT_EQ(a.size(), 200);
+        ASSERT_GE(a.capacity(), 200);
+        for (u32 i = 0; i < 200; ++i) { ASSERT_EQ(a[i], 114); }
     }
 
     // compare
@@ -354,27 +375,6 @@ TEST(TestCore, test_array)
         ASSERT_EQ(a[29], 1);
         ASSERT_EQ(a[30], 4);
         for (u32 i = 31; i < 41; ++i) { ASSERT_EQ(a[i], 114514); }
-    }
-
-    // assign
-    {
-        Array<u32> a(100, 114514);
-        Array<u32> b(200, 114);
-
-        a.assign({1, 1, 4, 5, 1, 4});
-        ASSERT_EQ(a.size(), 6);
-        ASSERT_GE(a.capacity(), 100);
-        ASSERT_EQ(a[0], 1);
-        ASSERT_EQ(a[1], 1);
-        ASSERT_EQ(a[2], 4);
-        ASSERT_EQ(a[3], 5);
-        ASSERT_EQ(a[4], 1);
-        ASSERT_EQ(a[5], 4);
-
-        a.assign(b.data(), b.size());
-        ASSERT_EQ(a.size(), 200);
-        ASSERT_GE(a.capacity(), 200);
-        for (u32 i = 0; i < 200; ++i) { ASSERT_EQ(a[i], 114); }
     }
 
     // remove

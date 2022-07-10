@@ -37,6 +37,10 @@ public:
     SparseArray& operator=(const SparseArray& rhs);
     SparseArray& operator=(SparseArray&& rhs) noexcept;
 
+    // special assign
+    void assign(const T* p, SizeType n);
+    void assign(std::initializer_list<T> init_list);
+
     // compare
     bool operator==(const SparseArray& rhs) const;
     bool operator!=(const SparseArray& rhs) const;
@@ -416,7 +420,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(const T* p, SizeType n, Alloc allo
         _setBitRange(0, n, true);
 
         // call ctor
-        for (SizeType i = 0; i < n; ++i) { new (&m_data[i].data) T(p[n]); }
+        for (SizeType i = 0; i < n; ++i) { new (&m_data[i].data) T(p[i]); }
     }
 }
 template<typename T, typename Alloc>
@@ -547,6 +551,39 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
         rhs.m_data = nullptr;
     }
     return *this;
+}
+
+// special assign
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::assign(const T* p, SizeType n)
+{
+    clear();
+
+    if (n)
+    {
+        // resize
+        reserve(n);
+        m_size = n;
+        _setBitRange(0, n, true);
+
+        // call ctor
+        for (SizeType i = 0; i < n; ++i) { new (&m_data[i].data) T(p[i]); }
+    }
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::assign(std::initializer_list<T> init_list)
+{
+    clear();
+
+    SizeType size = init_list.size();
+    if (size)
+    {
+        // resize
+        reserve(size);
+        m_size = size;
+        _setBitRange(0, size, true);
+
+        // call ctor
+        for (SizeType i = 0; i < size; ++i) { new (&m_data[i].data) T(*(init_list.begin() + i)); }
+    }
 }
 
 // compare

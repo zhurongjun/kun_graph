@@ -32,6 +32,10 @@ public:
     Array& operator=(const Array& rhs);
     Array& operator=(Array&& rhs) noexcept;
 
+    // special assign
+    void assign(const T* p, SizeType n);
+    void assign(std::initializer_list<T> init_list);
+
     // compare
     bool operator==(const Array& rhs) const;
     bool operator!=(const Array& rhs) const;
@@ -86,10 +90,6 @@ public:
     void appendAt(SizeType idx, const Array& arr);
     void appendAt(SizeType idx, std::initializer_list<T> init_list);
     void appendAt(SizeType idx, T* p, SizeType n);
-
-    // assign
-    void assign(const T* p, SizeType n);
-    void assign(std::initializer_list<T> init_list);
 
     // remove
     void                           removeAt(SizeType index, SizeType n = 1);
@@ -320,6 +320,21 @@ template<typename T, typename Alloc> KUN_INLINE Array<T, Alloc>& Array<T, Alloc>
         rhs.m_capacity = 0;
     }
     return *this;
+}
+
+// special assign
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(const T* p, SizeType n)
+{
+    // clear and resize
+    clear();
+    resizeUnsafe(n);
+
+    // copy items
+    memory::copyItems(m_data, p, n);
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(std::initializer_list<T> init_list)
+{
+    assign(init_list.begin(), init_list.size());
 }
 
 // compare
@@ -590,21 +605,6 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::appendAt(S
         addAtUnsafe(idx, n);
         memory::copyItems(m_data + idx, p, n);
     }
-}
-
-// assign
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(const T* p, SizeType n)
-{
-    // clear and resize
-    clear();
-    resizeUnsafe(n);
-
-    // copy items
-    memory::copyItems(m_data, p, n);
-}
-template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::assign(std::initializer_list<T> init_list)
-{
-    assign(init_list.begin(), init_list.size());
 }
 
 // remove
