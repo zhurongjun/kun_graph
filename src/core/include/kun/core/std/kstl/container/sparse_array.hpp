@@ -78,12 +78,14 @@ public:
 
     // add
     DataInfo add(const T& v);
+    DataInfo add(T&& v);
     DataInfo addUnsafe();
     DataInfo addDefault();
     DataInfo addZeroed();
 
     // add at
     void addAt(SizeType idx, const T& v);
+    void addAt(SizeType idx, T&& v);
     void addAtUnsafe(SizeType idx);
     void addAtDefault(SizeType idx);
     void addAtZeroed(SizeType idx);
@@ -809,6 +811,12 @@ template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::
     new (info.data) T(v);
     return info;
 }
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::add(T&& v)
+{
+    DataInfo info = addUnsafe();
+    new (info.data) T(std::move(v));
+    return info;
+}
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::addUnsafe()
 {
     SizeType index;
@@ -856,6 +864,11 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::addA
 {
     addAtUnsafe(idx);
     new (&m_data[idx].data) T(v);
+}
+template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::addAt(SizeType idx, T&& v)
+{
+    addAtUnsafe(idx);
+    new (&m_data[idx].data) T(std::move(v));
 }
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::addAtUnsafe(SizeType idx)
 {

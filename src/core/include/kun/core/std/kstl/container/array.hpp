@@ -65,6 +65,7 @@ public:
 
     // add
     SizeType add(const T& v, SizeType n = 1);
+    SizeType add(T&& v);
     SizeType addUnique(const T& v);
     SizeType addUnsafe(SizeType n = 1);
     SizeType addDefault(SizeType n = 1);
@@ -72,6 +73,7 @@ public:
 
     // add at
     void addAt(SizeType idx, const T& v, SizeType n = 1);
+    void addAt(SizeType idx, T&& v);
     void addAtUnsafe(SizeType idx, SizeType n = 1);
     void addAtDefault(SizeType idx, SizeType n = 1);
     void addAtZeroed(SizeType idx, SizeType n = 1);
@@ -475,6 +477,12 @@ template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeTy
     for (SizeType i = old_size; i < m_size; ++i) { new (m_data + i) T(v); }
     return old_size;
 }
+template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::add(T&& v)
+{
+    auto old_size = addUnsafe();
+    new (m_data + old_size) T(std::move(v));
+    return old_size;
+}
 template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::addUnique(const T& v)
 {
     if (auto p = find(v))
@@ -511,6 +519,12 @@ template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAt(Size
     KUN_Assert(isValidIndex(idx));
     addAtUnsafe(idx, n);
     for (SizeType i = 0; i < n; ++i) { new (m_data + idx + i) T(v); }
+}
+template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAt(SizeType idx, T&& v)
+{
+    KUN_Assert(isValidIndex(idx));
+    addAtUnsafe(idx);
+    new (m_data + idx) T(std::move(v));
 }
 template<typename T, typename Alloc> KUN_INLINE void Array<T, Alloc>::addAtUnsafe(SizeType idx, SizeType n)
 {
@@ -904,7 +918,7 @@ template<typename T, typename Alloc> KUN_INLINE T Array<T, Alloc>::popGet()
     return result;
 }
 template<typename T, typename Alloc> KUN_INLINE void     Array<T, Alloc>::push(const T& v) { add(v); }
-template<typename T, typename Alloc> KUN_INLINE void     Array<T, Alloc>::push(T&& v) { emplace(std::move(v)); }
+template<typename T, typename Alloc> KUN_INLINE void     Array<T, Alloc>::push(T&& v) { add(std::move(v)); }
 template<typename T, typename Alloc> KUN_INLINE T&       Array<T, Alloc>::top() { return *(m_data + m_size - 1); }
 template<typename T, typename Alloc> KUN_INLINE const T& Array<T, Alloc>::top() const { return *(m_data + m_size - 1); }
 template<typename T, typename Alloc> KUN_INLINE T&       Array<T, Alloc>::bottom() { return *m_data; }
