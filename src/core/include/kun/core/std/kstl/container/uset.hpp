@@ -76,7 +76,6 @@ public:
     USet(SizeType reserve_size, Alloc alloc = Alloc());
     USet(const T* p, SizeType n, Alloc alloc = Alloc());
     USet(std::initializer_list<T> init_list, Alloc alloc = Alloc());
-    USet(const Array<T>& arr, Alloc alloc = Alloc());
     ~USet();
 
     // copy & move
@@ -307,4 +306,42 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::_li
     }
     return info;
 }
+
+// ctor & dtor
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE USet<T, Config, Alloc>::USet(Alloc alloc)
+    : m_bucket(nullptr)
+    , m_bucket_size(0)
+    , m_bucket_mask(0)
+    , m_data(std::move(alloc))
+{
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE USet<T, Config, Alloc>::USet(SizeType reserve_size, Alloc alloc)
+    : m_bucket(nullptr)
+    , m_bucket_size(0)
+    , m_bucket_mask(0)
+    , m_data(std::move(alloc))
+{
+    reserve(reserve_size);
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE USet<T, Config, Alloc>::USet(const T* p, SizeType n, Alloc alloc)
+    : m_bucket(nullptr)
+    , m_bucket_size(0)
+    , m_bucket_mask(0)
+    , m_data(std::move(alloc))
+{
+    append(p, n);
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE USet<T, Config, Alloc>::USet(std::initializer_list<T> init_list, Alloc alloc)
+    : m_bucket(nullptr)
+    , m_bucket_size(0)
+    , m_bucket_mask(0)
+    , m_data(std::move(alloc))
+{
+    append(init_list);
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE USet<T, Config, Alloc>::~USet() { release(); }
 }// namespace kun
