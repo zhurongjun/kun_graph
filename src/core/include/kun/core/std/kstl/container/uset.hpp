@@ -57,7 +57,7 @@ template<typename T, typename TS> struct USetDataInfo
 // USet def
 namespace kun
 {
-template<typename T, typename Alloc, typename Config> class USet
+template<typename T, typename Config, typename Alloc> class USet
 {
 public:
     using SizeType = typename Alloc::SizeType;
@@ -71,7 +71,6 @@ public:
     using CDataInfo = USetDataInfo<const T, SizeType>;
     using DataArr = SparseArray<DataType, Alloc>;
 
-public:
     // ctor & dtor
     USet(Alloc alloc = Alloc());
     USet(SizeType reserve_size, Alloc alloc = Alloc());
@@ -227,6 +226,85 @@ private:
 private:
     mutable SizeType* m_bucket;
     mutable SizeType  m_bucket_size;
+    mutable SizeType  m_bucket_mask;
     DataArr           m_data;
 };
+}// namespace kun
+
+// USet impl
+namespace kun
+{
+// helpers
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::_calcBucketSize(SizeType data_size) const
+{
+    static constexpr SizeType min_size_to_hash = 4;
+    static constexpr SizeType basic_bucket_size = 8;
+    static constexpr SizeType avg_bucket_capacity = 2;
+
+    if (data_size >= min_size_to_hash)
+    {
+        return ceilPowerOf2(SizeType(data_size / avg_bucket_capacity) + basic_bucket_size);
+    }
+    return 1;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::_cleanBucket() const
+{
+    SizeType* begin = m_bucket;
+    SizeType* end = m_bucket + m_bucket_size;
+    for (; begin != end; ++begin) { *begin = npos; }
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::_bucketIndex(SizeType hash) const
+{
+    return hash & m_bucket_mask;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType& USet<T, Config, Alloc>::_bucketData(SizeType hash) const
+{
+    return m_bucket[_bucketIndex(hash)];
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::_linkToBucketOrAssign(SizeType index, DataType& data)
+{
+    DataInfo info(&data.data, index);
+    if constexpr (!Config::multi_key)
+    {
+        bool already_in_set = false;
+
+        // check if data has been added to set
+        if (DataInfo& found_info = findHashed(keyOf(data.data), data.hash))
+        {
+            // cover the old data
+            memory::moveItems(&found_info.data, &data.data, 1);
+
+            // remove old data
+            m_data.removeAt(index);
+
+            // modify data
+            info = found_info;
+        }
+        else
+        {
+            // link to bucket
+            if (!rehashIfNeed())
+            {
+                SizeType& id_ref = _bucketData(data.hash);
+                data.next = id_ref;
+                id_ref = index;
+            }
+        }
+    }
+    else
+    {
+        // link to bucket
+        if (!rehashIfNeed())
+        {
+            SizeType& id_ref = _bucketData(data.hash);
+            data.next = id_ref;
+            id_ref = index;
+        }
+    }
+    return info;
+}
 }// namespace kun
