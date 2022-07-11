@@ -593,4 +593,22 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Co
     }
 }
 template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::compactTop() { return m_data.compactTop(); }
+
+// data op
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::KeyType& USet<T, Config, Alloc>::keyOf(T& v) const
+{
+    return keyMapperType()(v);
+}
+template<typename T, typename Config, typename Alloc> const typename USet<T, Config, Alloc>::KeyType& USet<T, Config, Alloc>::keyOf(const T& v) const
+{
+    return keyMapperType()(v);
+}
+template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::keyEqual(const T& a, const T& b) const
+{
+    return ComparerType()(keyOf(a), keyOf(b));
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::HashType USet<T, Config, Alloc>::hashOf(const T& v) const
+{
+    return HasherType()(keyOf(v));
+}
 }// namespace kun
