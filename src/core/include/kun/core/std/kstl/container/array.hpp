@@ -40,12 +40,12 @@ public:
     bool operator!=(const Array& rhs) const;
 
     // getter
-    T*           data();
-    const T*     data() const;
     SizeType     size() const;
     SizeType     capacity() const;
     SizeType     slack() const;
     bool         empty();
+    T*           data();
+    const T*     data() const;
     Alloc&       allocator();
     const Alloc& allocator() const;
 
@@ -346,12 +346,12 @@ template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::operator==
 template<typename T, typename Alloc> KUN_INLINE bool Array<T, Alloc>::operator!=(const Array& rhs) const { return !(*this == rhs); }
 
 // getter
-template<typename T, typename Alloc> KUN_INLINE T*                                 Array<T, Alloc>::data() { return m_data; }
-template<typename T, typename Alloc> KUN_INLINE const T*                           Array<T, Alloc>::data() const { return m_data; }
 template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::size() const { return m_size; }
 template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::capacity() const { return m_capacity; }
 template<typename T, typename Alloc> KUN_INLINE typename Array<T, Alloc>::SizeType Array<T, Alloc>::slack() const { return m_capacity - m_size; }
 template<typename T, typename Alloc> KUN_INLINE bool                               Array<T, Alloc>::empty() { return m_size == 0; }
+template<typename T, typename Alloc> KUN_INLINE T*                                 Array<T, Alloc>::data() { return m_data; }
+template<typename T, typename Alloc> KUN_INLINE const T*                           Array<T, Alloc>::data() const { return m_data; }
 template<typename T, typename Alloc> KUN_INLINE Alloc&                             Array<T, Alloc>::allocator() { return m_alloc; }
 template<typename T, typename Alloc> KUN_INLINE const Alloc&                       Array<T, Alloc>::allocator() const { return m_alloc; }
 

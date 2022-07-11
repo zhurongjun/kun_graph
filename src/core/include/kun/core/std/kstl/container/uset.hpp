@@ -91,15 +91,16 @@ public:
     bool operator!=(const USet& rhs) const;
 
     // getter
-    bool            isCompact() const;
     SizeType        size() const;
-    SizeType        sparseSize() const;
-    SizeType        holeSize() const;
     SizeType        capacity() const;
     SizeType        slack() const;
+    SizeType        sparseSize() const;
+    SizeType        holeSize() const;
     SizeType        bitArraySize() const;
+    SizeType        freelistHead() const;
     SizeType        bucketSize() const;
     SizeType        bucketMask() const;
+    bool            isCompact() const;
     bool            empty() const;
     DataArr&        data();
     const DataArr&  data() const;
@@ -473,18 +474,9 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Co
 }
 
 // getter
-template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::isCompact() const { return m_data.isCompact(); }
 template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::size() const
 {
     return m_data.size();
-}
-template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::sparseSize() const
-{
-    return m_data.sparseSize();
-}
-template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::holeSize() const
-{
-    return m_data.holeSize();
 }
 template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::capacity() const
 {
@@ -494,9 +486,21 @@ template<typename T, typename Config, typename Alloc> typename USet<T, Config, A
 {
     return m_data.slack();
 }
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::sparseSize() const
+{
+    return m_data.sparseSize();
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::holeSize() const
+{
+    return m_data.holeSize();
+}
 template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::bitArraySize() const
 {
     return m_data.bitArraySize();
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::freelistHead() const
+{
+    return m_data.freelistHead();
 }
 template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::bucketSize() const
 {
@@ -506,6 +510,7 @@ template<typename T, typename Config, typename Alloc> typename USet<T, Config, A
 {
     return m_bucket_mask;
 }
+template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::isCompact() const { return m_data.isCompact(); }
 template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::empty() const { return m_data.empty(); }
 template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::DataArr& USet<T, Config, Alloc>::data() { return m_data; }
 template<typename T, typename Config, typename Alloc> const typename USet<T, Config, Alloc>::DataArr& USet<T, Config, Alloc>::data() const
