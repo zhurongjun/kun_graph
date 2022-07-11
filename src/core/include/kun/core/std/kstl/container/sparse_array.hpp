@@ -72,9 +72,9 @@ public:
     void release(SizeType capacity = 0);
     void reserve(SizeType capacity);
     void shrink();
-    void compact();
-    void compactStable();
-    void compactTop();
+    bool compact();
+    bool compactStable();
+    bool compactTop();
 
     // add
     DataInfo add(const T& v);
@@ -154,7 +154,7 @@ private:
     SizeType  m_bit_array_size;
     SizeType  m_num_hole;
     SizeType  m_first_hole;
-    SizeType  m_size;
+    SizeType  m_sparse_size;
     SizeType  m_capacity;
     DataType* m_data;
     Alloc     m_alloc;
@@ -176,12 +176,12 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
     if (new_capacity)
     {
         // calc new size
-        auto new_size = std::min(m_size, m_capacity);
+        auto new_sparse_size = std::min(m_sparse_size, m_capacity);
 
         // realloc
         if constexpr (memory::memory_policy_traits<T>::use_realloc)
         {
-            m_data = m_alloc.resizeContainer(m_data, m_size, m_capacity, new_capacity);
+            m_data = m_alloc.resizeContainer(m_data, m_sparse_size, m_capacity, new_capacity);
         }
         else
         {
@@ -189,7 +189,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
             DataType* new_memory = m_alloc.template alloc<DataType>(new_capacity);
 
             // move items
-            for (SizeType i = 0; i < new_size; ++i)
+            for (SizeType i = 0; i < new_sparse_size; ++i)
             {
                 DataType& new_data = *(new_memory + i);
                 DataType& old_data = *(m_data + i);
@@ -207,7 +207,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
             // destruct items
             if constexpr (memory::memory_policy_traits<T>::call_dtor)
             {
-                for (SizeType i = 0; i < m_size; ++i)
+                for (SizeType i = 0; i < m_sparse_size; ++i)
                 {
                     if (hasData(i))
                     {
@@ -222,7 +222,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
         }
 
         // update size
-        m_size = new_size;
+        m_sparse_size = new_sparse_size;
         m_capacity = new_capacity;
 
         // resize bit array
@@ -250,7 +250,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
         // destruct items
         if constexpr (memory::memory_policy_traits<T>::call_dtor)
         {
-            for (SizeType i = 0; i < m_size; ++i)
+            for (SizeType i = 0; i < m_sparse_size; ++i)
             {
                 if (hasData(i))
                 {
@@ -268,24 +268,24 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_res
         m_bit_array_size = 0;
         m_num_hole = 0;
         m_first_hole = npos;
-        m_size = 0;
+        m_sparse_size = 0;
         m_capacity = 0;
         m_data = nullptr;
     }
 }
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_grow(SizeType n)
 {
-    auto new_size = m_size + n;
+    auto new_sparse_size = m_sparse_size + n;
 
     // grow memory
-    if (new_size > m_capacity)
+    if (new_sparse_size > m_capacity)
     {
-        auto new_capacity = m_alloc.getGrow(new_size, m_capacity);
+        auto new_capacity = m_alloc.getGrow(new_sparse_size, m_capacity);
 
         // grow memory
         if constexpr (memory::memory_policy_traits<T>::use_realloc)
         {
-            m_data = m_alloc.resizeContainer(m_data, m_size, m_capacity, new_capacity);
+            m_data = m_alloc.resizeContainer(m_data, m_sparse_size, m_capacity, new_capacity);
         }
         else
         {
@@ -293,7 +293,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
             DataType* new_memory = m_alloc.template alloc<DataType>(new_capacity);
 
             // move items
-            for (SizeType i = 0; i < m_size; ++i)
+            for (SizeType i = 0; i < m_sparse_size; ++i)
             {
                 DataType& new_data = *(new_memory + i);
                 DataType& old_data = *(m_data + i);
@@ -344,7 +344,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::_gro
     }
 
     // update size
-    m_size = new_size;
+    m_sparse_size = new_sparse_size;
 }
 
 // ctor & dtor
@@ -354,7 +354,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(Alloc alloc)
     , m_bit_array_size(0)
     , m_num_hole(0)
     , m_first_hole(npos)
-    , m_size(0)
+    , m_sparse_size(0)
     , m_capacity(0)
     , m_data(nullptr)
     , m_alloc(std::move(alloc))
@@ -366,7 +366,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(SizeType size, Alloc alloc)
     , m_bit_array_size(0)
     , m_num_hole(0)
     , m_first_hole(npos)
-    , m_size(0)
+    , m_sparse_size(0)
     , m_capacity(0)
     , m_data(nullptr)
     , m_alloc(std::move(alloc))
@@ -375,7 +375,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(SizeType size, Alloc alloc)
     {
         // resize
         _resizeMemory(size);
-        m_size = size;
+        m_sparse_size = size;
         _setBitRange(0, size, true);
 
         // call ctor
@@ -388,7 +388,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(SizeType size, const T& v, Alloc a
     , m_bit_array_size(0)
     , m_num_hole(0)
     , m_first_hole(npos)
-    , m_size(0)
+    , m_sparse_size(0)
     , m_capacity(0)
     , m_data(nullptr)
     , m_alloc(std::move(alloc))
@@ -397,7 +397,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(SizeType size, const T& v, Alloc a
     {
         // resize
         _resizeMemory(size);
-        m_size = size;
+        m_sparse_size = size;
         _setBitRange(0, size, true);
 
         // call ctor
@@ -410,7 +410,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(const T* p, SizeType n, Alloc allo
     , m_bit_array_size(0)
     , m_num_hole(0)
     , m_first_hole(npos)
-    , m_size(0)
+    , m_sparse_size(0)
     , m_capacity(0)
     , m_data(nullptr)
     , m_alloc(std::move(alloc))
@@ -419,7 +419,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(const T* p, SizeType n, Alloc allo
     {
         // resize
         _resizeMemory(n);
-        m_size = n;
+        m_sparse_size = n;
         _setBitRange(0, n, true);
 
         // call ctor
@@ -432,7 +432,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(std::initializer_list<T> init_list
     , m_bit_array_size(0)
     , m_num_hole(0)
     , m_first_hole(npos)
-    , m_size(0)
+    , m_sparse_size(0)
     , m_capacity(0)
     , m_data(nullptr)
     , m_alloc(std::move(alloc))
@@ -442,7 +442,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(std::initializer_list<T> init_list
     {
         // resize
         _resizeMemory(size);
-        m_size = size;
+        m_sparse_size = size;
         _setBitRange(0, size, true);
 
         // call ctor
@@ -458,7 +458,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(const SparseArray& other, Alloc al
     , m_bit_array_size(0)
     , m_num_hole(0)
     , m_first_hole(npos)
-    , m_size(0)
+    , m_sparse_size(0)
     , m_capacity(0)
     , m_data(nullptr)
     , m_alloc(std::move(alloc))
@@ -471,7 +471,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(SparseArray&& other) noexcept
     , m_bit_array_size(other.m_bit_array_size)
     , m_num_hole(other.m_num_hole)
     , m_first_hole(other.m_first_hole)
-    , m_size(other.m_size)
+    , m_sparse_size(other.m_sparse_size)
     , m_capacity(other.m_capacity)
     , m_data(other.m_data)
     , m_alloc(std::move(other.m_alloc))
@@ -480,7 +480,7 @@ KUN_INLINE SparseArray<T, Alloc>::SparseArray(SparseArray&& other) noexcept
     other.m_bit_array_size = 0;
     other.m_num_hole = 0;
     other.m_first_hole = npos;
-    other.m_size = 0;
+    other.m_sparse_size = 0;
     other.m_capacity = 0;
     other.m_data = nullptr;
 }
@@ -491,13 +491,13 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
     if (this != &rhs)
     {
         clear();
-        reserve(rhs.m_size);
-        m_size = rhs.m_size;
+        reserve(rhs.m_sparse_size);
+        m_sparse_size = rhs.m_sparse_size;
 
         // copy data
         if constexpr (memory::memory_policy_traits<T>::call_ctor)
         {
-            for (SizeType i = 0; i < rhs.m_size; ++i)
+            for (SizeType i = 0; i < rhs.m_sparse_size; ++i)
             {
                 DataType*       dst_data = m_data + i;
                 const DataType* src_data = rhs.m_data + i;
@@ -516,11 +516,11 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
         else
         {
             // copy data
-            memory::memcpy(m_data, rhs.m_data, sizeof(DataType) * rhs.m_size);
+            memory::memcpy(m_data, rhs.m_data, sizeof(DataType) * rhs.m_sparse_size);
         }
 
         // copy bit array
-        memory::memcpy(m_bit_array, rhs.m_bit_array, sizeof(u32) * algo::calcNumWords(rhs.m_size));
+        memory::memcpy(m_bit_array, rhs.m_bit_array, sizeof(u32) * algo::calcNumWords(rhs.m_sparse_size));
 
         // copy other data
         m_num_hole = rhs.m_num_hole;
@@ -539,7 +539,7 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
         m_bit_array_size = rhs.m_bit_array_size;
         m_num_hole = rhs.m_num_hole;
         m_first_hole = rhs.m_first_hole;
-        m_size = rhs.m_size;
+        m_sparse_size = rhs.m_sparse_size;
         m_capacity = rhs.m_capacity;
         m_data = rhs.m_data;
         m_alloc = std::move(rhs.m_alloc);
@@ -549,7 +549,7 @@ template<typename T, typename Alloc> KUN_INLINE SparseArray<T, Alloc>& SparseArr
         rhs.m_bit_array_size = 0;
         rhs.m_num_hole = 0;
         rhs.m_first_hole = npos;
-        rhs.m_size = 0;
+        rhs.m_sparse_size = 0;
         rhs.m_capacity = 0;
         rhs.m_data = nullptr;
     }
@@ -565,7 +565,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::assi
     {
         // resize
         reserve(n);
-        m_size = n;
+        m_sparse_size = n;
         _setBitRange(0, n, true);
 
         // call ctor
@@ -581,7 +581,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::assi
     {
         // resize
         reserve(size);
-        m_size = size;
+        m_sparse_size = size;
         _setBitRange(0, size, true);
 
         // call ctor
@@ -592,9 +592,9 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::assi
 // compare
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::operator==(const SparseArray& rhs) const
 {
-    if (m_size == rhs.m_size)
+    if (m_sparse_size == rhs.m_sparse_size)
     {
-        for (SizeType i = 0; i < m_size; ++i)
+        for (SizeType i = 0; i < m_sparse_size; ++i)
         {
             bool lhs_has_data = hasData(i);
             bool rhs_has_data = rhs.hasData(i);
@@ -621,9 +621,9 @@ template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::oper
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isCompact() const { return m_num_hole == 0; }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::size() const
 {
-    return m_size - m_num_hole;
+    return m_sparse_size - m_num_hole;
 }
-template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::sparseSize() const { return m_size; }
+template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::sparseSize() const { return m_sparse_size; }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::holeSize() const
 {
     return m_num_hole;
@@ -634,13 +634,13 @@ template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::
 }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::slack() const
 {
-    return m_capacity - m_size + m_num_hole;
+    return m_capacity - m_sparse_size + m_num_hole;
 }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::bitArraySize()
 {
     return m_bit_array_size;
 }
-template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::empty() const { return (m_size - m_num_hole) == 0; }
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::empty() const { return (m_sparse_size - m_num_hole) == 0; }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::DataType*       SparseArray<T, Alloc>::data() { return m_data; }
 template<typename T, typename Alloc> KUN_INLINE const typename SparseArray<T, Alloc>::DataType* SparseArray<T, Alloc>::data() const { return m_data; }
 template<typename T, typename Alloc> KUN_INLINE u32*         SparseArray<T, Alloc>::bitArray() { return m_bit_array; }
@@ -651,10 +651,10 @@ template<typename T, typename Alloc> KUN_INLINE const Alloc& SparseArray<T, Allo
 // validate
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::hasData(SizeType idx) const { return _getBit(idx); }
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isHole(SizeType idx) const { return !_getBit(idx); }
-template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isValidIndex(SizeType idx) const { return idx >= 0 && idx < m_size; }
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isValidIndex(SizeType idx) const { return idx >= 0 && idx < m_sparse_size; }
 template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::isValidPointer(const T* p) const
 {
-    return p >= reinterpret_cast<T*>(m_data) && p < reinterpret_cast<T*>(m_data + m_size);
+    return p >= reinterpret_cast<T*>(m_data) && p < reinterpret_cast<T*>(m_data + m_sparse_size);
 }
 
 // memory op
@@ -663,7 +663,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::clea
     // destruct items
     if constexpr (memory::memory_policy_traits<T>::call_dtor)
     {
-        for (SizeType i = 0; i < m_size; ++i)
+        for (SizeType i = 0; i < m_sparse_size; ++i)
         {
             if (hasData(i))
             {
@@ -681,7 +681,7 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::clea
     // clean up data
     m_num_hole = 0;
     m_first_hole = npos;
-    m_size = 0;
+    m_sparse_size = 0;
 }
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::release(SizeType capacity)
 {
@@ -697,16 +697,16 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::rese
 }
 template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::shrink()
 {
-    auto new_capacity = m_alloc.getShrink(m_size, m_capacity);
+    auto new_capacity = m_alloc.getShrink(m_sparse_size, m_capacity);
     _resizeMemory(new_capacity);
 }
-template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::compact()
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::compact()
 {
     if (!isCompact())
     {
         // fill hole
-        SizeType compacted_index = m_size - m_num_hole;
-        SizeType search_index = m_size;
+        SizeType compacted_index = m_sparse_size - m_num_hole;
+        SizeType search_index = m_sparse_size;
         while (m_first_hole != npos)
         {
             SizeType next_index = (m_data + m_first_hole)->next;
@@ -729,29 +729,35 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::comp
 
         // setup data
         m_num_hole = 0;
-        m_size = compacted_index;
+        m_sparse_size = compacted_index;
+
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
-template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::compactStable()
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::compactStable()
 {
     if (!isCompact())
     {
-        SizeType compacted_index = m_size - m_num_hole;
+        SizeType compacted_index = m_sparse_size - m_num_hole;
         SizeType read_index = 0;
         SizeType write_index = 0;
 
         // skip first compacted range
-        while (hasData(write_index) && write_index != m_size) ++write_index;
+        while (hasData(write_index) && write_index != m_sparse_size) ++write_index;
         read_index = write_index + 1;
 
         // copy items
-        while (read_index < m_size)
+        while (read_index < m_sparse_size)
         {
             // skip hole
-            while (!hasData(read_index) && read_index < m_size) ++read_index;
+            while (!hasData(read_index) && read_index < m_sparse_size) ++read_index;
 
             // move items
-            while (read_index < m_size && hasData(read_index))
+            while (read_index < m_sparse_size && hasData(read_index))
             {
                 (m_data + write_index)->data = std::move((m_data + read_index)->data);
                 (m_data + read_index)->data.~T();
@@ -765,14 +771,21 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::comp
         _setBitRange(compacted_index, m_num_hole, false);
         m_num_hole = 0;
         m_first_hole = npos;
-        m_size = compacted_index;
+        m_sparse_size = compacted_index;
+
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
-template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::compactTop()
+template<typename T, typename Alloc> KUN_INLINE bool SparseArray<T, Alloc>::compactTop()
 {
     if (!isCompact())
     {
-        for (SizeType i(m_size - 1), n(m_size); n; --i, --n)
+        bool has_changes = false;
+        for (SizeType i(m_sparse_size - 1), n(m_sparse_size); n; --i, --n)
         {
             DataType& data = m_data[i];
 
@@ -794,13 +807,20 @@ template<typename T, typename Alloc> KUN_INLINE void SparseArray<T, Alloc>::comp
                 }
 
                 // update size
-                --m_size;
+                --m_sparse_size;
+
+                has_changes = true;
             }
             else
             {
                 break;
             }
         }
+        return has_changes;
+    }
+    else
+    {
+        return false;
     }
 }
 
@@ -837,7 +857,7 @@ template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::
     else
     {
         // add new element
-        index = m_size;
+        index = m_sparse_size;
         _grow(1);
     }
 
@@ -1021,7 +1041,7 @@ template<typename TP>
 KUN_INLINE typename SparseArray<T, Alloc>::SizeType SparseArray<T, Alloc>::removeAllIf(TP&& p)
 {
     SizeType count = 0;
-    for (SizeType i = 0; i < m_size; ++i)
+    for (SizeType i = 0; i < m_sparse_size; ++i)
     {
         if (hasData(i) && p(m_data[i].data))
         {
@@ -1073,7 +1093,7 @@ KUN_INLINE typename SparseArray<T, Alloc>::CDataInfo SparseArray<T, Alloc>::find
 // find if
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::findIf(TP&& p)
 {
-    for (SizeType i = 0; i < m_size; ++i)
+    for (SizeType i = 0; i < m_sparse_size; ++i)
     {
         if (hasData(i))
         {
@@ -1090,7 +1110,7 @@ template<typename T, typename Alloc>
 template<typename TP>
 KUN_INLINE typename SparseArray<T, Alloc>::DataInfo SparseArray<T, Alloc>::findLastIf(TP&& p)
 {
-    for (SizeType i(m_size - 1), n(m_size); n; --i, --n)
+    for (SizeType i(m_sparse_size - 1), n(m_sparse_size); n; --i, --n)
     {
         if (hasData(i))
         {
@@ -1107,7 +1127,7 @@ template<typename T, typename Alloc>
 template<typename TP>
 KUN_INLINE typename SparseArray<T, Alloc>::CDataInfo SparseArray<T, Alloc>::findIf(TP&& p) const
 {
-    for (SizeType i = 0; i < m_size; ++i)
+    for (SizeType i = 0; i < m_sparse_size; ++i)
     {
         if (hasData(i))
         {
@@ -1124,7 +1144,7 @@ template<typename T, typename Alloc>
 template<typename TP>
 KUN_INLINE typename SparseArray<T, Alloc>::CDataInfo SparseArray<T, Alloc>::findLastIf(TP&& p) const
 {
-    for (SizeType i(m_size - 1), n(m_size); n; --i, --n)
+    for (SizeType i(m_sparse_size - 1), n(m_sparse_size); n; --i, --n)
     {
         if (hasData(i))
         {
@@ -1148,36 +1168,36 @@ template<typename T, typename Alloc> template<typename TP> KUN_INLINE bool Spars
 // sort
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE void SparseArray<T, Alloc>::sort(TP&& p)
 {
-    if (m_size)
+    if (m_sparse_size)
     {
         compact();
-        algo::introSort(m_data, m_data + m_size, [&p](const DataType& a, const DataType& b) { return p(a.data, b.data); });
+        algo::introSort(m_data, m_data + m_sparse_size, [&p](const DataType& a, const DataType& b) { return p(a.data, b.data); });
     }
 }
 template<typename T, typename Alloc> template<typename TP> KUN_INLINE void SparseArray<T, Alloc>::sortStable(TP&& p)
 {
-    if (m_size)
+    if (m_sparse_size)
     {
         compactStable();
-        algo::mergeSort(m_data, m_data + m_size, [&p](const DataType& a, const DataType& b) { return p(a.data, b.data); });
+        algo::mergeSort(m_data, m_data + m_sparse_size, [&p](const DataType& a, const DataType& b) { return p(a.data, b.data); });
     }
 }
 
 // support foreach
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::It SparseArray<T, Alloc>::begin()
 {
-    return It(m_data, m_size, m_bit_array);
+    return It(m_data, m_sparse_size, m_bit_array);
 }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::It SparseArray<T, Alloc>::end()
 {
-    return It(m_data, m_size, m_bit_array, m_size);
+    return It(m_data, m_sparse_size, m_bit_array, m_sparse_size);
 }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::CIt SparseArray<T, Alloc>::begin() const
 {
-    return CIt(m_data, m_size, m_bit_array);
+    return CIt(m_data, m_sparse_size, m_bit_array);
 }
 template<typename T, typename Alloc> KUN_INLINE typename SparseArray<T, Alloc>::CIt SparseArray<T, Alloc>::end() const
 {
-    return CIt(m_data, m_size, m_bit_array, m_size);
+    return CIt(m_data, m_sparse_size, m_bit_array, m_sparse_size);
 }
 }// namespace kun

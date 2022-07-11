@@ -79,7 +79,7 @@ public:
     ~USet();
 
     // copy & move
-    USet(const USet& other);
+    USet(const USet& other, Alloc alloc = Alloc());
     USet(USet&& other);
 
     // assign & move assign
@@ -87,8 +87,8 @@ public:
     USet& operator=(USet&& rhs);
 
     // compare
-    bool operator==(const USet& rhs);
-    bool operator!=(const USet& rhs);
+    bool operator==(const USet& rhs) const;
+    bool operator!=(const USet& rhs) const;
 
     // getter
     bool            isCompact() const;
@@ -99,6 +99,7 @@ public:
     SizeType        slack() const;
     SizeType        bitArraySize() const;
     SizeType        bucketSize() const;
+    SizeType        bucketMask() const;
     bool            empty() const;
     DataArr&        data();
     const DataArr&  data() const;
@@ -118,17 +119,20 @@ public:
     void release(SizeType capacity = 0);
     void reserve(SizeType capacity);
     void shrink();
-    void compact();
-    void compactStable();
+    bool compact();
+    bool compactStable();
+    bool compactTop();
 
-    // hash op
-    bool           needRehash();
-    void           rehash();
-    bool           rehashIfNeed();
+    // data op
     KeyType&       keyOf(T& v) const;
     const KeyType& keyOf(const T& v) const;
     bool           keyEqual(const T& a, const T& b) const;
     HashType       hashOf(const T& v) const;
+
+    // rehash
+    bool needRehash();
+    void rehash();
+    bool rehashIfNeed();
 
     // add (add or assign)
     DataInfo add(const T& v);
@@ -218,6 +222,7 @@ private:
     // helpers
     SizeType  _calcBucketSize(SizeType data_size) const;
     void      _cleanBucket() const;
+    bool      _resizeBucket() const;
     SizeType  _bucketIndex(SizeType hash) const;
     SizeType& _bucketData(SizeType hash) const;
     DataInfo  _linkToBucketOrAssign(SizeType index, DataType& data);
@@ -245,13 +250,52 @@ KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::_ca
     {
         return ceilPowerOf2(SizeType(data_size / avg_bucket_capacity) + basic_bucket_size);
     }
-    return 1;
+    else if (data_size)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::_cleanBucket() const
 {
-    SizeType* begin = m_bucket;
-    SizeType* end = m_bucket + m_bucket_size;
-    for (; begin != end; ++begin) { *begin = npos; }
+    if (m_bucket)
+    {
+        SizeType* begin = m_bucket;
+        SizeType* end = m_bucket + m_bucket_size;
+        for (; begin != end; ++begin) { *begin = npos; }
+    }
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::_resizeBucket() const
+{
+    SizeType new_bucket_size = _calcBucketSize(m_data.capacity());
+
+    if (new_bucket_size != m_bucket_size)
+    {
+        if (new_bucket_size)
+        {
+            m_bucket = m_data.resizeContainer(m_bucket, m_bucket_size, m_bucket_size, new_bucket_size);
+            m_bucket_size = new_bucket_size;
+            m_bucket_mask = new_bucket_size - 1;
+        }
+        else
+        {
+            if (m_bucket)
+            {
+                m_data.allocator().free(m_bucket);
+                m_bucket = nullptr;
+                m_bucket_size = 0;
+                m_bucket_mask = 0;
+            }
+        }
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 template<typename T, typename Config, typename Alloc>
 KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::_bucketIndex(SizeType hash) const
@@ -269,8 +313,6 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::_li
     DataInfo info(&data.data, index);
     if constexpr (!Config::multi_key)
     {
-        bool already_in_set = false;
-
         // check if data has been added to set
         if (DataInfo& found_info = findHashed(keyOf(data.data), data.hash))
         {
@@ -344,4 +386,206 @@ KUN_INLINE USet<T, Config, Alloc>::USet(std::initializer_list<T> init_list, Allo
     append(init_list);
 }
 template<typename T, typename Config, typename Alloc> KUN_INLINE USet<T, Config, Alloc>::~USet() { release(); }
+
+// copy & move
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE USet<T, Config, Alloc>::USet(const USet& other, Alloc alloc)
+    : m_bucket(nullptr)
+    , m_bucket_size(0)
+    , m_bucket_mask(0)
+    , m_data(std::move(alloc))
+{
+    *this = other;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE USet<T, Config, Alloc>::USet(USet&& other)
+    : m_bucket(other.m_bucket)
+    , m_bucket_size(other.m_bucket_size)
+    , m_bucket_mask(other.m_bucket_mask)
+    , m_data(std::move(other.m_data))
+{
+    other.m_bucket = nullptr;
+    other.m_bucket_size = 0;
+    other.m_bucket_mask = 0;
+}
+
+// assign & move assign
+template<typename T, typename Config, typename Alloc> KUN_INLINE USet<T, Config, Alloc>& USet<T, Config, Alloc>::operator=(const USet& rhs)
+{
+    if (this != &rhs)
+    {
+        // clear
+        clear();
+
+        if (!rhs.empty())
+        {
+            // realloc bucket
+            if (m_bucket_size != rhs.m_bucket_size)
+            {
+                m_bucket_size = rhs.m_bucket_size;
+                m_bucket_mask = rhs.m_bucket_mask;
+                m_bucket = m_data.allocator().template alloc<SizeType>(m_bucket_size);
+            }
+
+            // copy bucket
+            memory::memcpy(m_bucket, rhs.m_bucket, m_bucket_size * sizeof(SizeType));
+
+            // copy data
+            m_data = rhs.m_data;
+        }
+    }
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE USet<T, Config, Alloc>& USet<T, Config, Alloc>::operator=(USet&& rhs)
+{
+    if (this != &rhs)
+    {
+        // clear
+        clear();
+
+        // move data
+        m_bucket = rhs.m_bucket;
+        m_bucket_size = rhs.m_bucket_size;
+        m_bucket_mask = rhs.m_bucket_mask;
+        m_data = std::move(rhs.m_data);
+
+        // clean up rhs
+        rhs.m_bucket = nullptr;
+        rhs.m_bucket_size = 0;
+        rhs.m_bucket_mask = 0;
+    }
+}
+
+// compare
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::operator==(const USet& rhs) const
+{
+    if (size() == rhs.size())
+    {
+        return isSubsetOf(rhs);
+    }
+    else
+    {
+        return false;
+    }
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::operator!=(const USet& rhs) const
+{
+    return !(*this == rhs);
+}
+
+// getter
+template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::isCompact() const { return m_data.isCompact(); }
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::size() const
+{
+    return m_data.size();
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::sparseSize() const
+{
+    return m_data.sparseSize();
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::holeSize() const
+{
+    return m_data.holeSize();
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::capacity() const
+{
+    return m_data.capacity();
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::slack() const
+{
+    return m_data.slack();
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::bitArraySize() const
+{
+    return m_data.bitArraySize();
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::bucketSize() const
+{
+    return m_bucket_size;
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::bucketMask() const
+{
+    return m_bucket_mask;
+}
+template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::empty() const { return m_data.empty(); }
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::DataArr& USet<T, Config, Alloc>::data() { return m_data; }
+template<typename T, typename Config, typename Alloc> const typename USet<T, Config, Alloc>::DataArr& USet<T, Config, Alloc>::data() const
+{
+    return m_data;
+}
+template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::SizeType* USet<T, Config, Alloc>::bucket() { return m_bucket; }
+template<typename T, typename Config, typename Alloc> const typename USet<T, Config, Alloc>::SizeType* USet<T, Config, Alloc>::bucket() const
+{
+    return m_bucket;
+}
+template<typename T, typename Config, typename Alloc> Alloc&       USet<T, Config, Alloc>::allocator() { return m_data.allocator(); }
+template<typename T, typename Config, typename Alloc> const Alloc& USet<T, Config, Alloc>::allocator() const { return m_data.allocator(); }
+
+// validate
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::hasData(SizeType idx) const
+{
+    return m_data.hasData(idx);
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::isHole(SizeType idx) const
+{
+    return m_data.isHole(idx);
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::isValidIndex(SizeType idx) const
+{
+    return m_data.isValidIndex(idx);
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::isValidPointer(const T* p) const
+{
+    return m_data.isValidPointer(p);
+}
+
+// memory op
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::clear()
+{
+    m_data.clear();
+    _cleanBucket();
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::release(SizeType capacity)
+{
+    m_data.release(capacity);
+    _resizeBucket();
+    _cleanBucket();
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::reserve(SizeType capacity)
+{
+    m_data.reserve(capacity);
+    rehashIfNeed();
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::shrink()
+{
+    m_data.shrink();
+    if (_resizeBucket())
+    {
+        rehash();
+    }
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::compact()
+{
+    if (m_data.compact())
+    {
+        rehash();
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::compactStable()
+{
+    if (m_data.compactStable())
+    {
+        rehash();
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::compactTop() { return m_data.compactTop(); }
 }// namespace kun
