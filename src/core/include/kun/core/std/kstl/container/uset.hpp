@@ -3,6 +3,7 @@
 #include "kun/core/std/types.hpp"
 #include "kun/core/std/kstl/algo/functor.hpp"
 #include "sparse_array.hpp"
+#include "uset_iterator.hpp"
 #include "fwd.hpp"
 
 // USet config
@@ -131,9 +132,9 @@ public:
     HashType       hashOf(const T& v) const;
 
     // rehash
-    bool needRehash();
-    void rehash();
-    bool rehashIfNeed();
+    bool needRehash() const;
+    void rehash() const;
+    bool rehashIfNeed() const;
 
     // add (add or assign)
     DataInfo add(const T& v);
@@ -610,5 +611,41 @@ template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc
 template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::HashType USet<T, Config, Alloc>::hashOf(const T& v) const
 {
     return HasherType()(keyOf(v));
+}
+
+// rehash
+template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::needRehash() const
+{
+    SizeType new_bucket_size = _calcBucketSize(m_data.capacity());
+    return m_data.size() > 0 && (new_bucket_size != m_bucket_size);
+}
+template<typename T, typename Config, typename Alloc> void USet<T, Config, Alloc>::rehash() const
+{
+    // try resize bucket
+    _resizeBucket();
+
+    // rehash
+    if (m_bucket)
+    {
+        _cleanBucket();
+        for (auto it = m_data.begin(); it; ++it)
+        {
+            SizeType& id_ref = _bucketData(it->hash);
+            it->next = id_ref;
+            id_ref = it.index();
+        }
+    }
+}
+template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::rehashIfNeed() const
+{
+    if (needRehash())
+    {
+        rehash();
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 }// namespace kun
