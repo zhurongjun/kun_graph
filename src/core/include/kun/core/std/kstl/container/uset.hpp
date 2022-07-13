@@ -136,6 +136,12 @@ public:
     void rehash() const;
     bool rehashIfNeed() const;
 
+    // per element hash op
+    bool     isInBucket(SizeType index);
+    DataInfo addToBucketOrAssign(SizeType index);
+    void     addToBucketAnyway(SizeType index);
+    void     removeFromBucket(SizeType index);
+
     // add (add or assign)
     DataInfo add(const T& v);
     DataInfo add(T&& v);
@@ -227,7 +233,6 @@ private:
     bool      _resizeBucket() const;
     SizeType  _bucketIndex(SizeType hash) const;
     SizeType& _bucketData(SizeType hash) const;
-    DataInfo  _linkToBucketOrAssign(SizeType index, DataType& data);
 
 private:
     mutable SizeType* m_bucket;
@@ -308,47 +313,6 @@ template<typename T, typename Config, typename Alloc>
 KUN_INLINE typename USet<T, Config, Alloc>::SizeType& USet<T, Config, Alloc>::_bucketData(SizeType hash) const
 {
     return m_bucket[_bucketIndex(hash)];
-}
-template<typename T, typename Config, typename Alloc>
-KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::_linkToBucketOrAssign(SizeType index, DataType& data)
-{
-    DataInfo info(&data.data, index);
-    if constexpr (!Config::multi_key)
-    {
-        // check if data has been added to set
-        if (DataInfo& found_info = findHashed(keyOf(data.data), data.hash))
-        {
-            // cover the old data
-            memory::moveItems(&found_info.data, &data.data, 1);
-
-            // remove old data
-            m_data.removeAt(index);
-
-            // modify data
-            info = found_info;
-        }
-        else
-        {
-            // link to bucket
-            if (!rehashIfNeed())
-            {
-                SizeType& id_ref = _bucketData(data.hash);
-                data.next = id_ref;
-                id_ref = index;
-            }
-        }
-    }
-    else
-    {
-        // link to bucket
-        if (!rehashIfNeed())
-        {
-            SizeType& id_ref = _bucketData(data.hash);
-            data.next = id_ref;
-            id_ref = index;
-        }
-    }
-    return info;
 }
 
 // ctor & dtor
@@ -651,6 +615,101 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Co
     }
 }
 
+// per element hash op
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::isInBucket(SizeType index)
+{
+    if (hasData(index))
+    {
+        DataType& data = m_data[index];
+        SizeType  id = _bucketData(data.hash);
+
+        while (id != npos)
+        {
+            if (id == index)
+            {
+                return true;
+            }
+            id = m_data[id].next;
+        }
+        return false;
+    }
+    else
+    {
+        return false;
+    }
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addToBucketOrAssign(SizeType index)
+{
+    KUN_Assert(hasData(index));
+    KUN_Assert(!isInBucket(index));
+
+    DataType& data = m_data[index];
+
+    DataInfo info(&data.data, index);
+    if constexpr (!Config::multi_key)
+    {
+        // check if data has been added to set
+        if (DataInfo& found_info = findHashed(keyOf(data.data), data.hash))
+        {
+            // cover the old data
+            memory::moveItems(&found_info.data, &data.data, 1);
+
+            // remove old data
+            m_data.removeAt(index);
+
+            // modify data
+            info = found_info;
+        }
+        else
+        {
+            // link to bucket
+            if (!rehashIfNeed())
+            {
+                SizeType& id_ref = _bucketData(data.hash);
+                data.next = id_ref;
+                id_ref = index;
+            }
+        }
+    }
+    else
+    {
+        // link to bucket
+        if (!rehashIfNeed())
+        {
+            SizeType& id_ref = _bucketData(data.hash);
+            data.next = id_ref;
+            id_ref = index;
+        }
+    }
+    return info;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::addToBucketAnyway(SizeType index)
+{
+    KUN_Assert(hasData(index));
+    KUN_Assert(!isInBucket(index));
+
+    DataType& data = m_data[index];
+    SizeType& id_ref = _bucketData(data.hash);
+    data->next = id_ref;
+    id_ref = index;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::removeFromBucket(SizeType index)
+{
+    KUN_Assert(hasData(index));
+    KUN_Assert(isInBucket(index));
+
+    DataType& data = m_data[index];
+    for (SizeType& id_ref = _bucketData(data.hash); id_ref != npos; id_ref = m_data[id_ref].next)
+    {
+        if (id_ref == index)
+        {
+            id_ref = data.next;
+            break;
+        }
+    }
+}
+
 // add (add or assign)
 template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add(const T& v)
 {
@@ -660,7 +719,7 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T
     info->hash = hashOf(info->data);
 
     // link or assign
-    _linkToBucketOrAssign(info.index, info->data);
+    addToBucketOrAssign(info.index);
 }
 template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add(T&& v)
 {
@@ -670,7 +729,7 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T
     info->hash = hashOf(info->data);
 
     // link or assign
-    _linkToBucketOrAssign(info.index, info->data);
+    addToBucketOrAssign(info.index);
 }
 template<typename T, typename Config, typename Alloc>
 KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addHashed(const T& v, HashType hash)
@@ -683,7 +742,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add
     info->hash = hash;
 
     // link or assign
-    _linkToBucketOrAssign(info.index, info->data);
+    addToBucketOrAssign(info.index);
 }
 template<typename T, typename Config, typename Alloc>
 KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addHashed(T&& v, HashType hash)
@@ -696,7 +755,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add
     info->hash = hash;
 
     // link or assign
-    _linkToBucketOrAssign(info.index, info->data);
+    addToBucketOrAssign(info.index);
 }
 
 // add anyway (add but never check existence)
@@ -709,9 +768,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add
     info->hash = hashOf(info->data);
 
     // link directly
-    SizeType& id_ref = _bucketData(info->hash);
-    info->data->next = id_ref;
-    id_ref = info.index;
+    addToBucketAnyway(info.index);
 }
 template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addAnyway(T&& v)
 {
@@ -721,9 +778,7 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T
     info->hash = hashOf(info->data);
 
     // link directly
-    SizeType& id_ref = _bucketData(info->hash);
-    info->data->next = id_ref;
-    id_ref = info.index;
+    addToBucketAnyway(info.index);
 }
 template<typename T, typename Config, typename Alloc>
 KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addAnywayHashed(const T& v, HashType hash)
@@ -736,9 +791,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add
     info->hash = hash;
 
     // link directly
-    SizeType& id_ref = _bucketData(info->hash);
-    info->data->next = id_ref;
-    id_ref = info.index;
+    addToBucketAnyway(info.index);
 }
 template<typename T, typename Config, typename Alloc>
 KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addAnywayHashed(T&& v, HashType hash)
@@ -752,9 +805,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add
     info->hash = hash;
 
     // link directly
-    SizeType& id_ref = _bucketData(info->hash);
-    info->data->next = id_ref;
-    id_ref = info.index;
+    addToBucketAnyway(info.index);
 }
 
 // try add (first check existence, then add, never assign)
@@ -808,9 +859,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::try
         info->hash = hash;
 
         // link directly
-        SizeType& id_ref = _bucketData(info->hash);
-        info->data->next = id_ref;
-        id_ref = info.index;
+        addToBucketAnyway(info.index);
     }
     return DataInfo();
 }
@@ -826,7 +875,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::emp
     info->hash = hashOf(info->data);
 
     // link or assign
-    _linkToBucketOrAssign(info.index, info->data);
+    addToBucketOrAssign(info.index);
 }
 template<typename T, typename Config, typename Alloc>
 template<typename... Args>
@@ -839,7 +888,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::emp
     KUN_Assert(hashOf(info->data) == hash);
 
     // link or assign
-    _linkToBucketOrAssign(info.index, info->data);
+    addToBucketOrAssign(info.index);
 }
 template<typename T, typename Config, typename Alloc>
 template<typename... Args>
@@ -851,9 +900,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::emp
     info->hash = hashOf(info->data);
 
     // link directly
-    SizeType& id_ref = _bucketData(info->hash);
-    info->data->next = id_ref;
-    id_ref = info.index;
+    addToBucketAnyway(info.index);
 }
 template<typename T, typename Config, typename Alloc>
 template<typename... Args>
@@ -866,9 +913,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::emp
     KUN_Assert(hashOf(info->data) == hash);
 
     // link directly
-    SizeType& id_ref = _bucketData(info->hash);
-    info->data->next = id_ref;
-    id_ref = info.index;
+    addToBucketAnyway(info.index);
 }
 
 // append
