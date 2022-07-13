@@ -137,7 +137,7 @@ public:
     bool rehashIfNeed() const;
 
     // per element hash op
-    bool     isInBucket(SizeType index);
+    bool     isInBucket(SizeType index) const;
     DataInfo addToBucketOrAssign(SizeType index);
     void     addToBucketAnyway(SizeType index);
     void     removeFromBucket(SizeType index);
@@ -616,7 +616,7 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Co
 }
 
 // per element hash op
-template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::isInBucket(SizeType index)
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::isInBucket(SizeType index) const
 {
     if (hasData(index))
     {
@@ -928,5 +928,50 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Co
 template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::append(T* p, SizeType n)
 {
     for (SizeType i = 0; i < n; ++i) { add(p[n]); }
+}
+
+// remove
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::remove(const KeyType& key)
+{
+    if (DataInfo info = find(key))
+    {
+        memory::destructItem(info.data, 1);
+        removeFromBucket(info.index);
+    }
+    return npos;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::removeHashed(const KeyType& key, HashType hash)
+{
+    if (DataInfo info = findHashed(key, hash))
+    {
+        memory::destructItem(info.data, 1);
+        removeFromBucket(info.index);
+    }
+    return npos;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::remvoeAll(const KeyType& key)
+{
+    SizeType count = 0;
+    HashType hash = HasherType()(key);
+    while (DataInfo info = findHashed(key, hash))
+    {
+        memory::destructItem(info.data, 1);
+        removeFromBucket(info.index);
+    }
+    return count;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::removeAllHashed(const KeyType& key, HashType hash)
+{
+    SizeType count = 0;
+    while (DataInfo info = findHashed(key, hash))
+    {
+        memory::destructItem(info.data, 1);
+        removeFromBucket(info.index);
+    }
+    return count;
 }
 }// namespace kun
