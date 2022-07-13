@@ -596,30 +596,32 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Co
 template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::compactTop() { return m_data.compactTop(); }
 
 // data op
-template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::KeyType& USet<T, Config, Alloc>::keyOf(T& v) const
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::KeyType& USet<T, Config, Alloc>::keyOf(T& v) const
 {
     return keyMapperType()(v);
 }
-template<typename T, typename Config, typename Alloc> const typename USet<T, Config, Alloc>::KeyType& USet<T, Config, Alloc>::keyOf(const T& v) const
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE const typename USet<T, Config, Alloc>::KeyType& USet<T, Config, Alloc>::keyOf(const T& v) const
 {
     return keyMapperType()(v);
 }
-template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::keyEqual(const T& a, const T& b) const
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::keyEqual(const T& a, const T& b) const
 {
     return ComparerType()(keyOf(a), keyOf(b));
 }
-template<typename T, typename Config, typename Alloc> typename USet<T, Config, Alloc>::HashType USet<T, Config, Alloc>::hashOf(const T& v) const
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::HashType USet<T, Config, Alloc>::hashOf(const T& v) const
 {
     return HasherType()(keyOf(v));
 }
 
 // rehash
-template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::needRehash() const
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::needRehash() const
 {
     SizeType new_bucket_size = _calcBucketSize(m_data.capacity());
     return m_data.size() > 0 && (new_bucket_size != m_bucket_size);
 }
-template<typename T, typename Config, typename Alloc> void USet<T, Config, Alloc>::rehash() const
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::rehash() const
 {
     // try resize bucket
     _resizeBucket();
@@ -636,7 +638,7 @@ template<typename T, typename Config, typename Alloc> void USet<T, Config, Alloc
         }
     }
 }
-template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc>::rehashIfNeed() const
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::rehashIfNeed() const
 {
     if (needRehash())
     {
@@ -647,5 +649,239 @@ template<typename T, typename Config, typename Alloc> bool USet<T, Config, Alloc
     {
         return false;
     }
+}
+
+// add (add or assign)
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add(const T& v)
+{
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(v);
+    info->hash = hashOf(info->data);
+
+    // link or assign
+    _linkToBucketOrAssign(info.index, info->data);
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add(T&& v)
+{
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(std::move(v));
+    info->hash = hashOf(info->data);
+
+    // link or assign
+    _linkToBucketOrAssign(info.index, info->data);
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addHashed(const T& v, HashType hash)
+{
+    KUN_Assert(hashOf(v) == hash);
+
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(v);
+    info->hash = hash;
+
+    // link or assign
+    _linkToBucketOrAssign(info.index, info->data);
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addHashed(T&& v, HashType hash)
+{
+    KUN_Assert(hashOf(v) == hash);
+
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(std::move(v));
+    info->hash = hash;
+
+    // link or assign
+    _linkToBucketOrAssign(info.index, info->data);
+}
+
+// add anyway (add but never check existence)
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addAnyway(const T& v)
+{
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(v);
+    info->hash = hashOf(info->data);
+
+    // link directly
+    SizeType& id_ref = _bucketData(info->hash);
+    info->data->next = id_ref;
+    id_ref = info.index;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addAnyway(T&& v)
+{
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(std::move(v));
+    info->hash = hashOf(info->data);
+
+    // link directly
+    SizeType& id_ref = _bucketData(info->hash);
+    info->data->next = id_ref;
+    id_ref = info.index;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addAnywayHashed(const T& v, HashType hash)
+{
+    KUN_Assert(hashOf(v) == hash);
+
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(v);
+    info->hash = hash;
+
+    // link directly
+    SizeType& id_ref = _bucketData(info->hash);
+    info->data->next = id_ref;
+    id_ref = info.index;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::addAnywayHashed(T&& v, HashType hash)
+{
+
+    KUN_Assert(hashOf(v) == hash);
+
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(std::move(v));
+    info->hash = hash;
+
+    // link directly
+    SizeType& id_ref = _bucketData(info->hash);
+    info->data->next = id_ref;
+    id_ref = info.index;
+}
+
+// try add (first check existence, then add, never assign)
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::tryAdd(const T& v)
+{
+    HashType hash = hashOf(v);
+    if (!containHashed(v, hash))
+    {
+        return addHashed(v, hash);
+    }
+    return DataInfo();
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::tryAdd(T&& v)
+{
+    HashType hash = hashOf(v);
+    if (!containHashed(v, hash))
+    {
+        return addHashed(std::move(v), hash);
+    }
+    return DataInfo();
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::tryAddHashed(const T& v, HashType hash)
+{
+    if (!containHashed(v, hash))
+    {
+        return addHashed(std::move(v), hash);
+    }
+    return DataInfo();
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::tryAddHashed(T&& v, HashType hash)
+{
+    if (!containHashed(v, hash))
+    {
+        return addHashed(std::move(v), hash);
+    }
+    return DataInfo();
+}
+template<typename T, typename Config, typename Alloc>
+template<typename AsType, typename AsHasher, typename AsComparer>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::tryAddAs(AsType&& v, AsHasher&& hasher, AsComparer&& comparer)
+{
+    HashType hash = hasher(v);
+    auto     constant_hasher = [hash](auto& a) { return hash; };
+    if (!containAs(std::forward<AsType>(v), constant_hasher, std::forward<AsComparer>(comparer)))
+    {
+        // create node
+        auto info = m_data.addUnsafe();
+        new (&info->data) T(v);
+        info->hash = hash;
+
+        // link directly
+        SizeType& id_ref = _bucketData(info->hash);
+        info->data->next = id_ref;
+        id_ref = info.index;
+    }
+    return DataInfo();
+}
+
+// emplace
+template<typename T, typename Config, typename Alloc>
+template<typename... Args>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::emplace(Args&&... args)
+{
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(std::forward<Args>(args)...);
+    info->hash = hashOf(info->data);
+
+    // link or assign
+    _linkToBucketOrAssign(info.index, info->data);
+}
+template<typename T, typename Config, typename Alloc>
+template<typename... Args>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::emplaceHashed(HashType hash, Args&&... args)
+{
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(std::forward<Args>(args)...);
+    info->hash = hash;
+    KUN_Assert(hashOf(info->data) == hash);
+
+    // link or assign
+    _linkToBucketOrAssign(info.index, info->data);
+}
+template<typename T, typename Config, typename Alloc>
+template<typename... Args>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::emplaceAnyway(Args&&... args)
+{
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(std::forward<Args>(args)...);
+    info->hash = hashOf(info->data);
+
+    // link directly
+    SizeType& id_ref = _bucketData(info->hash);
+    info->data->next = id_ref;
+    id_ref = info.index;
+}
+template<typename T, typename Config, typename Alloc>
+template<typename... Args>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::emplaceAnywayHashed(HashType hash, Args&&... args)
+{
+    // create node
+    auto info = m_data.addUnsafe();
+    new (&info->data) T(std::forward<Args>(args)...);
+    info->hash = hash;
+    KUN_Assert(hashOf(info->data) == hash);
+
+    // link directly
+    SizeType& id_ref = _bucketData(info->hash);
+    info->data->next = id_ref;
+    id_ref = info.index;
+}
+
+// append
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::append(const USet& set)
+{
+    for (const auto& v : set) { add(v); }
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::append(std::initializer_list<T> init_list)
+{
+    for (const auto& v : init_list) { add(v); }
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE void USet<T, Config, Alloc>::append(T* p, SizeType n)
+{
+    for (SizeType i = 0; i < n; ++i) { add(p[n]); }
 }
 }// namespace kun
