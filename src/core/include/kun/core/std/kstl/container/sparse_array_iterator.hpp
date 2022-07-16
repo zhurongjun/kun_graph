@@ -57,18 +57,21 @@ public:
     {
     }
 
+    // impl cpp iterator
     KUN_INLINE SparseArrayIt& operator++()
     {
         ++m_bit_it;
         return *this;
     }
-    KUN_INLINE TS         index() const { return m_bit_it.index(); }
     KUN_INLINE bool       operator==(const SparseArrayIt& rhs) const { return m_bit_it == rhs.m_bit_it && m_array == rhs.m_array; }
     KUN_INLINE bool       operator!=(const SparseArrayIt& rhs) const { return !(*this == rhs); }
     KUN_INLINE            operator bool() const { return (bool)m_bit_it; }
     KUN_INLINE bool       operator!() const { return !(bool)*this; }
     KUN_INLINE ValueType& operator*() const { return m_array[index()].data; }
     KUN_INLINE ValueType* operator->() const { return &m_array[index()].data; }
+
+    // other data
+    KUN_INLINE TS index() const { return m_bit_it.index(); }
 
 private:
     DataType* m_array;

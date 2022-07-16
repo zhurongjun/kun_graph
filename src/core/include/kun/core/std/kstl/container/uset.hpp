@@ -21,40 +21,6 @@ template<typename T, bool MultiKey> struct USetConfigDefault
 };
 }// namespace kun
 
-// USet data
-namespace kun
-{
-template<typename T, typename TS, typename HashType> struct USetData
-{
-    T          data;
-    HashType   hash;
-    mutable TS next;
-};
-// data info
-template<typename T, typename TS> struct USetDataInfo
-{
-    T*   data;
-    TS   index;
-    bool already_exist;// used by add or emplace, always be false in other case
-
-    KUN_INLINE USetDataInfo()
-        : data(nullptr)
-        , index((TS)npos)
-        , already_exist(false)
-    {
-    }
-    KUN_INLINE USetDataInfo(T* data, TS index, bool already_exist = false)
-        : data(data)
-        , index(index)
-        , already_exist(already_exist)
-    {
-    }
-    KUN_INLINE    operator bool() { return data != nullptr; }
-    KUN_INLINE T& operator*() const { return *data; }
-    KUN_INLINE T* operator->() const { return data; }
-};
-}// namespace kun
-
 // USet def
 namespace kun
 {
@@ -71,6 +37,8 @@ public:
     using DataInfo = USetDataInfo<T, SizeType>;
     using CDataInfo = USetDataInfo<const T, SizeType>;
     using DataArr = SparseArray<DataType, Alloc>;
+    using It = USetIt<T, SizeType, HashType, false>;
+    using CIt = USetIt<T, SizeType, HashType, true>;
 
     // ctor & dtor
     USet(Alloc alloc = Alloc());
@@ -225,6 +193,10 @@ public:
     bool isSubsetOf(const USet& rhs) const;// sub set
 
     // support foreach
+    It  begin();
+    It  end();
+    CIt begin() const;
+    CIt end() const;
 
 private:
     // helpers
@@ -1284,4 +1256,21 @@ template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Co
     }
 }
 
+// support foreach
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::It USet<T, Config, Alloc>::begin()
+{
+    return It(m_data.data(), m_data.sparseSize(), m_data.bitArray());
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::It USet<T, Config, Alloc>::end()
+{
+    return It(m_data.data(), m_data.sparseSize(), m_data.bitArray(), m_data.sparseSize());
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::CIt USet<T, Config, Alloc>::begin() const
+{
+    return CIt(m_data.data(), m_data.sparseSize(), m_data.bitArray());
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE typename USet<T, Config, Alloc>::CIt USet<T, Config, Alloc>::end() const
+{
+    return CIt(m_data.data(), m_data.sparseSize(), m_data.bitArray(), m_data.sparseSize());
+}
 }// namespace kun
