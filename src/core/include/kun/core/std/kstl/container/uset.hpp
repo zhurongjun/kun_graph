@@ -176,7 +176,7 @@ public:
     // remove
     SizeType remove(const KeyType& key);
     SizeType removeHashed(const KeyType& key, HashType hash);
-    SizeType remvoeAll(const KeyType& key);                     // [multi set extend]
+    SizeType removeAll(const KeyType& key);                     // [multi set extend]
     SizeType removeAllHashed(const KeyType& key, HashType hash);// [multi set extend]
 
     // remove as
@@ -660,6 +660,7 @@ KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::add
 
             // modify data
             info = found_info;
+            info.already_exist = true;
         }
         else
         {
@@ -952,26 +953,335 @@ KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::rem
     return npos;
 }
 template<typename T, typename Config, typename Alloc>
-KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::remvoeAll(const KeyType& key)
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::removeAll(const KeyType& key)
 {
-    SizeType count = 0;
-    HashType hash = HasherType()(key);
-    while (DataInfo info = findHashed(key, hash))
+    HashType  hash = HasherType()(key);
+    SizeType& id_ref = _bucketData(hash);
+    SizeType  count = 0;
+    while (id_ref != npos)
     {
-        memory::destructItem(info.data, 1);
-        removeFromBucket(info.index);
+        DataType& data = m_data[id_ref];
+        if (ComparerType()(keyOf(data.data), key))
+        {
+            memory::destructItem(&data.data, 1);
+            removeFromBucket(id_ref);
+            ++count;
+        }
+        id_ref = data.next;
     }
     return count;
 }
 template<typename T, typename Config, typename Alloc>
 KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::removeAllHashed(const KeyType& key, HashType hash)
 {
-    SizeType count = 0;
-    while (DataInfo info = findHashed(key, hash))
+    KUN_Assert(HasherType()(key) == hash);
+
+    SizeType& id_ref = _bucketData(hash);
+    SizeType  count = 0;
+    while (id_ref != npos)
     {
-        memory::destructItem(info.data, 1);
-        removeFromBucket(info.index);
+        DataType& data = m_data[id_ref];
+        if (ComparerType()(keyOf(data.data), key))
+        {
+            memory::destructItem(&data.data, 1);
+            removeFromBucket(id_ref);
+            ++count;
+        }
+        id_ref = data.next;
     }
     return count;
 }
+
+// remove as
+template<typename T, typename Config, typename Alloc>
+template<typename AsType, typename AsHasher, typename AsComparer>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::removeAs(AsType&& v, AsHasher&& hasher, AsComparer&& comparer)
+{
+    if (DataInfo info = findAs(std::forward<AsType>(v), std::forward<AsHasher>(hasher), std::forward<AsComparer>(comparer)))
+    {
+        memory::destructItem(info.data, 1);
+        removeFromBucket(info.index);
+        return info.index;
+    }
+    return npos;
+}
+template<typename T, typename Config, typename Alloc>
+template<typename AsType, typename AsHasher, typename AsComparer>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::removeAllAs(AsType&& v, AsHasher&& hasher, AsComparer&& comparer)
+{
+    HashType  hash = hasher(v);
+    SizeType& id_ref = _bucketData(hash);
+    SizeType  count = 0;
+    while (id_ref != npos)
+    {
+        DataType& data = m_data[id_ref];
+        if (comparer(data.data, v))
+        {
+            memory::destructItem(&data.data, 1);
+            removeFromBucket(id_ref);
+            ++count;
+        }
+        id_ref = data.next;
+    }
+    return count;
+}
+
+// modify
+template<typename T, typename Config, typename Alloc> KUN_INLINE T& USet<T, Config, Alloc>::operator[](SizeType index)
+{
+    KUN_Assert(hasData(index));
+    return m_data[index].data;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE const T& USet<T, Config, Alloc>::operator[](SizeType index) const
+{
+    KUN_Assert(hasData(index));
+    return m_data[index].data;
+}
+
+// find
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::find(const KeyType& key)
+{
+    HashType hash = HasherType()(key);
+    SizeType id_ref = _bucketData(hash);
+    DataInfo info;
+    while (id_ref != npos)
+    {
+        DataType& data = m_data[id_ref];
+        if (ComparerType()(keyOf(data.data), key))
+        {
+            info.data = &data.data;
+            info.index = id_ref;
+            break;
+        }
+        id_ref = data.next;
+    }
+    return info;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::CDataInfo USet<T, Config, Alloc>::find(const KeyType& key) const
+{
+    DataInfo info = const_cast<USet*>(this)->find(key);
+    return CDataInfo(info.data, info.index);
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::findHashed(const KeyType& key, HashType hash)
+{
+    KUN_Assert(HasherType()(key) == hash);
+
+    SizeType id_ref = _bucketData(hash);
+    DataInfo info;
+    while (id_ref != npos)
+    {
+        DataType& data = m_data[id_ref];
+        if (ComparerType()(keyOf(data.data), key))
+        {
+            info.data = &data.data;
+            info.index = id_ref;
+            break;
+        }
+        id_ref = data.next;
+    }
+    return info;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::CDataInfo USet<T, Config, Alloc>::findHashed(const KeyType& key, HashType hash) const
+{
+    DataInfo info = const_cast<USet*>(this)->findHashed(key, hash);
+    return CDataInfo(info.data, info.index);
+}
+
+// find as
+template<typename T, typename Config, typename Alloc>
+template<typename AsType, typename AsHasher, typename AsComparer>
+KUN_INLINE typename USet<T, Config, Alloc>::DataInfo USet<T, Config, Alloc>::findAs(AsType&& v, AsHasher&& hasher, AsComparer&& comparer)
+{
+    HashType hash = hasher(v);
+    SizeType id_ref = _bucketData(hash);
+    DataInfo info;
+    while (id_ref != npos)
+    {
+        DataType& data = m_data[id_ref];
+        if (comparer(keyOf(data.data), v))
+        {
+            info.data = &data.data;
+            info.index = id_ref;
+            break;
+        }
+        id_ref = data.next;
+    }
+    return info;
+}
+template<typename T, typename Config, typename Alloc>
+template<typename AsType, typename AsHasher, typename AsComparer>
+KUN_INLINE typename USet<T, Config, Alloc>::CDataInfo USet<T, Config, Alloc>::findAs(AsType&& v, AsHasher&& hasher, AsComparer&& comparer) const
+{
+    DataInfo info = const_cast<USet*>(this)->findAs(std::forward<AsType>(v), std::forward<AsHasher>(hasher), std::forward<AsComparer>(comparer));
+    return CDataInfo(info.data, info.index);
+}
+
+// contain
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::contain(const KeyType& key) const
+{
+    return (bool)find(key);
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::containHashed(const KeyType& key, HashType hash) const
+{
+    return (bool)findHashed(key, hash);
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::count(const KeyType& key) const
+{
+    HashType  hash = HasherType()(key);
+    SizeType& id_ref = _bucketData(hash);
+    SizeType  count = 0;
+    while (id_ref != npos)
+    {
+        DataType& data = m_data[id_ref];
+        if (ComparerType()(keyOf(data.data), key))
+        {
+            ++count;
+        }
+        id_ref = data.next;
+    }
+    return count;
+}
+template<typename T, typename Config, typename Alloc>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::countHashed(const KeyType& key, HashType hash) const
+{
+    KUN_Assert(HasherType()(key) == hash);
+
+    SizeType& id_ref = _bucketData(hash);
+    SizeType  count = 0;
+    while (id_ref != npos)
+    {
+        DataType& data = m_data[id_ref];
+        if (ComparerType()(keyOf(data.data), key))
+        {
+            ++count;
+        }
+        id_ref = data.next;
+    }
+    return count;
+}
+
+// contain as
+template<typename T, typename Config, typename Alloc>
+template<typename AsType, typename AsHasher, typename AsComparer>
+KUN_INLINE bool USet<T, Config, Alloc>::containAs(AsType&& v, AsHasher&& hasher, AsComparer&& comparer) const
+{
+    return (bool)findAs(std::forward<AsType>(v), std::forward<AsHasher>(hasher), std::forward<AsComparer>(comparer));
+}
+template<typename T, typename Config, typename Alloc>
+template<typename AsType, typename AsHasher, typename AsComparer>
+KUN_INLINE typename USet<T, Config, Alloc>::SizeType USet<T, Config, Alloc>::countAs(AsType&& v, AsHasher&& hasher, AsComparer&& comparer) const
+{
+    HashType  hash = hasher(v);
+    SizeType& id_ref = _bucketData(hash);
+    SizeType  count = 0;
+    while (id_ref != npos)
+    {
+        DataType& data = m_data[id_ref];
+        if (comparer(keyOf(data.data), v))
+        {
+            ++count;
+        }
+        id_ref = data.next;
+    }
+    return count;
+}
+
+// sort
+template<typename T, typename Config, typename Alloc> template<typename TP> KUN_INLINE void USet<T, Config, Alloc>::sort(TP&& p)
+{
+    m_data.template sort([&](const DataType& a, const DataType& b) { return p(keyOf(a), keyOf(b)); });
+    rehash();
+}
+template<typename T, typename Config, typename Alloc> template<typename TP> KUN_INLINE void USet<T, Config, Alloc>::sortStable(TP&& p)
+{
+    m_data.template sortStable([&](const DataType& a, const DataType& b) { return p(keyOf(a), keyOf(b)); });
+    rehash();
+}
+
+// set ops
+template<typename T, typename Config, typename Alloc> KUN_INLINE USet<T, Config, Alloc> USet<T, Config, Alloc>::operator&(const USet& rhs) const
+{
+    bool        rhs_smaller = size() > rhs.size();
+    const USet& a = rhs_smaller ? rhs : *this;
+    const USet& b = rhs_smaller ? *this : rhs;
+
+    USet result;
+    result.reserve(a.size());
+
+    for (const auto& v : a)
+    {
+        if (b.contain(keyOf(v)))
+        {
+            result.add(v);
+        }
+    }
+
+    return result;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE USet<T, Config, Alloc> USet<T, Config, Alloc>::operator|(const USet& rhs) const
+{
+    USet result(*this);
+    for (const auto& v : rhs) { result.add(v); }
+    return result;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE USet<T, Config, Alloc> USet<T, Config, Alloc>::operator^(const USet& rhs) const
+{
+    USet result(size());
+
+    for (const auto& v : *this)
+    {
+        if (!rhs.contain(keyOf(v)))
+        {
+            result.add(v);
+        }
+    }
+
+    for (const auto& v : rhs)
+    {
+        if (!contain(v))
+        {
+            result.add(v);
+        }
+    }
+
+    return result;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE USet<T, Config, Alloc> USet<T, Config, Alloc>::operator-(const USet& rhs) const
+{
+    USet result(size());
+
+    for (const auto& v : *this)
+    {
+        if (!rhs.contain(keyOf(v)))
+        {
+            result.add(v);
+        }
+    }
+
+    return result;
+}
+template<typename T, typename Config, typename Alloc> KUN_INLINE bool USet<T, Config, Alloc>::isSubsetOf(const USet& rhs) const
+{
+    if (rhs.size() <= size())
+    {
+        for (const auto& v : rhs)
+        {
+            if (!contain(keyOf(v)))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 }// namespace kun
