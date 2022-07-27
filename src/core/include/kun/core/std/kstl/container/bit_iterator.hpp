@@ -164,7 +164,7 @@ private:
         m_eval_mask = newVal ^ val;
 
         // if the Nth bit was the lowest set bit of BitMask, then this gives us N
-        m_bit_index = m_DWORD_index * algo::NumBitsPerDWORD + bitScan(m_eval_mask);
+        m_bit_index = m_DWORD_index * algo::NumBitsPerDWORD + bitTailZero(m_eval_mask);
 
         // out of bound
         if (m_bit_index > m_size)

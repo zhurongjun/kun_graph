@@ -60,7 +60,7 @@ void  bigMemswap(void* buf1, void* buf2, Size size)
     }
 
     // aligned fast swap
-    u32 common_align = std::min(bitScan((Size)(u1.pSize - u2.pSize)), (Size)3u);
+    u32 common_align = std::min(bitTailZero((Size)(u1.pSize - u2.pSize)), (Size)3u);
     switch (common_align)
     {
         default:

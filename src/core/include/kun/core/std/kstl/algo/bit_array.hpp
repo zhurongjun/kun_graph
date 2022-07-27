@@ -116,7 +116,7 @@ template<typename TS> KUN_INLINE TS findBit(const u32* data, TS num, bool v)
         // reserve for CountTrailingZeros
         const u32 bits = v ? (data[dword_index]) : ~(data[dword_index]);
         KUN_Assert(bits != 0);
-        const TS lowest_bit_idx = bitScan(bits) + (dword_index << NumBitsPerDWORDLogTwo);
+        const TS lowest_bit_idx = bitTailZero(bits) + (dword_index << NumBitsPerDWORDLogTwo);
 
         if (lowest_bit_idx < num)
             return lowest_bit_idx;
@@ -150,7 +150,7 @@ template<typename TS> KUN_INLINE TS findLastBit(const u32* data, TS num, bool v)
         {
             const u32 bits = (v ? data[dword_index] : ~data[dword_index]) & mask;
             KUN_Assert(bits != 0);
-            u32 bit_index = (NumBitsPerDWORD - 1) - bitScanR(bits);
+            u32 bit_index = (NumBitsPerDWORD - 1) - bitLeadingZero(bits);
             return bit_index + (dword_index << NumBitsPerDWORDLogTwo);
         }
     }
@@ -173,7 +173,7 @@ template<typename TS> KUN_INLINE TS findAndSetFirstZeroBit(u32* data, TS num, TS
         const u32 bits = ~(data[dword_index]);
         KUN_Assert(bits != 0);
         const u32 lowest_bit = (bits) & (-(i32)bits);
-        const TS  lowest_bit_index = bitScan(bits) + (dword_index << NumBitsPerDWORDLogTwo);
+        const TS  lowest_bit_index = bitTailZero(bits) + (dword_index << NumBitsPerDWORDLogTwo);
         if (lowest_bit_index < num)
         {
             data[dword_index] |= lowest_bit;
@@ -203,7 +203,7 @@ template<typename TS> KUN_INLINE TS FindAndSetLastZeroBit(u32* data, TS num)
     // flip the bits, then we only need to find the first one bit -- easy.
     const u32 bits = ~data[dword_index] & mask;
     KUN_Assert(bits != 0);
-    u32 bit_index = (NumBitsPerDWORD - 1) - bitScanR(bits);
+    u32 bit_index = (NumBitsPerDWORD - 1) - bitLeadingZero(bits);
     data[dword_index] |= 1u << bit_index;
 
     return bit_index + (dword_index << NumBitsPerDWORDLogTwo);
