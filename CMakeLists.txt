@@ -14,7 +14,7 @@ message(STATUS "use compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "c flags: ${CMAKE_C_FLAGS}")
 
 # proj
-project(kun VERSION 0.0.0 LANGUAGES CXX)
+project(kun-graph VERSION 0.0.0 LANGUAGES CXX)
 
 # config cpp
 set(CMAKE_CXX_STANDARD 17)
@@ -50,7 +50,7 @@ elseif (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
 endif ()
 
 # enable unity build
-set(CMAKE_UNITY_BUILD ON)
+# set(CMAKE_UNITY_BUILD ON)
 
 # options
 option(KUN_WITH_TEST "enable test for kun" ON)

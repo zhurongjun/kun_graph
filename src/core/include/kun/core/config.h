@@ -44,9 +44,9 @@
 
 // inline
 #if KUN_COMPILER == KUN_COMPILER_GCC || KUN_COMPILER == KUN_COMPILER_CLANG
-    #define KUN_INLINE __attribute__((always_inline)) inline
+    #define KUN_INLINE inline
 #elif KUN_COMPILER == KUN_COMPILER_MSVC
-    #define KUN_INLINE __forceinline
+    #define KUN_INLINE inline
 #else
     #define KUN_INLINE inline
 #endif
