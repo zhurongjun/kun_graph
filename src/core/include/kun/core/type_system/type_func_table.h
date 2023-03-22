@@ -65,7 +65,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_default_ctor_v<T>)
         {
-            return [](void* p) { new (p) T(); };
+            return +[](void* p) { new (p) T(); };
         }
         else
         {
@@ -76,7 +76,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (is_detected_v<__test::has_init, T>)
         {
-            return [](void* p) { reinterpret_cast<T*>(p)->init(); };
+            return +[](void* p) { reinterpret_cast<T*>(p)->init(); };
         }
         else
         {
@@ -87,7 +87,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (is_detected_v<__test::has_shutdown, T>)
         {
-            return [](void* p) { reinterpret_cast<T*>(p)->shutdown(); };
+            return +[](void* p) { reinterpret_cast<T*>(p)->shutdown(); };
         }
         else
         {
@@ -96,7 +96,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     }
     constexpr static TypeFuncTable::LifeCircleFunc dtor()
     {
-        return [](void* p) { reinterpret_cast<T*>(p)->~T(); };
+        return +[](void* p) { reinterpret_cast<T*>(p)->~T(); };
     }
 
     // serialize
@@ -104,7 +104,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (is_detected_v<__test::has_serialize, T>)
         {
-            return [](void* p, const char* name, Archive& ar) { ar& NamedValue(name, *reinterpret_cast<T*>(p)); };
+            return +[](void* p, const char* name, Archive& ar) { ar& NamedValue(name, *reinterpret_cast<T*>(p)); };
         }
         else
         {
@@ -117,7 +117,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_copy_ctor_v<T>)
         {
-            return [](void* p, const void* other) { new (p) T(*reinterpret_cast<const T*>(other)); };
+            return +[](void* p, const void* other) { new (p) T(*reinterpret_cast<const T*>(other)); };
         }
         else
         {
@@ -128,7 +128,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_move_ctor_v<T>)
         {
-            return [](void* p, void* other) { new (p) T(std::move(*reinterpret_cast<T*>(other))); };
+            return +[](void* p, void* other) { new (p) T(std::move(*reinterpret_cast<T*>(other))); };
         }
         else
         {
@@ -139,7 +139,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_assign_v<T>)
         {
-            return [](void* p, const void* other) { *reinterpret_cast<T*>(p) = *reinterpret_cast<const T*>(other); };
+            return +[](void* p, const void* other) { *reinterpret_cast<T*>(p) = *reinterpret_cast<const T*>(other); };
         }
         else
         {
@@ -150,7 +150,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_move_assign_v<T>)
         {
-            return [](void* p, void* other) { *reinterpret_cast<T*>(p) = std::move(*reinterpret_cast<T*>(other)); };
+            return +[](void* p, void* other) { *reinterpret_cast<T*>(p) = std::move(*reinterpret_cast<T*>(other)); };
         }
         else
         {
@@ -163,7 +163,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (is_swapable_v<T>)
         {
-            return [](void* a, void* b) { std::swap(*reinterpret_cast<T*>(a), *reinterpret_cast<T*>(b)); };
+            return +[](void* a, void* b) { std::swap(*reinterpret_cast<T*>(a), *reinterpret_cast<T*>(b)); };
         }
         else
         {
@@ -174,7 +174,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (is_hashable_v<T>)
         {
-            return [](const void* p) { return Hash<T>()(*reinterpret_cast<const T*>(p)); };
+            return +[](const void* p) { return Hash<T>()(*reinterpret_cast<const T*>(p)); };
         }
         else
         {
@@ -187,7 +187,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_add_v<T>)
         {
-            return [](void* out, const void* lhs, const void* rhs)
+            return +[](void* out, const void* lhs, const void* rhs)
             { *reinterpret_cast<T*>(out) = (*reinterpret_cast<const T*>(lhs)) + (*reinterpret_cast<const T*>(rhs)); };
         }
         else
@@ -199,7 +199,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_sub_v<T>)
         {
-            return [](void* out, const void* lhs, const void* rhs)
+            return +[](void* out, const void* lhs, const void* rhs)
             { *reinterpret_cast<T*>(out) = (*reinterpret_cast<const T*>(lhs)) - (*reinterpret_cast<const T*>(rhs)); };
         }
         else
@@ -211,7 +211,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_mul_v<T>)
         {
-            return [](void* out, const void* lhs, const void* rhs)
+            return +[](void* out, const void* lhs, const void* rhs)
             { *reinterpret_cast<T*>(out) = (*reinterpret_cast<const T*>(lhs)) * (*reinterpret_cast<const T*>(rhs)); };
         }
         else
@@ -223,7 +223,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_div_v<T>)
         {
-            return [](void* out, const void* lhs, const void* rhs)
+            return +[](void* out, const void* lhs, const void* rhs)
             { *reinterpret_cast<T*>(out) = (*reinterpret_cast<const T*>(lhs)) / (*reinterpret_cast<const T*>(rhs)); };
         }
         else
@@ -237,7 +237,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_equal_v<T>)
         {
-            return [](const void* lhs, const void* rhs) { return (*reinterpret_cast<const T*>(lhs)) == (*reinterpret_cast<const T*>(rhs)); };
+            return +[](const void* lhs, const void* rhs) { return (*reinterpret_cast<const T*>(lhs)) == (*reinterpret_cast<const T*>(rhs)); };
         }
         else
         {
@@ -248,7 +248,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_less_v<T>)
         {
-            return [](const void* lhs, const void* rhs) { return (*reinterpret_cast<const T*>(lhs)) < (*reinterpret_cast<const T*>(rhs)); };
+            return +[](const void* lhs, const void* rhs) { return (*reinterpret_cast<const T*>(lhs)) < (*reinterpret_cast<const T*>(rhs)); };
         }
         else
         {
@@ -259,7 +259,7 @@ template<typename T> struct TypeFuncTableMakerDefault
     {
         if constexpr (has_greater_equal_v<T>)
         {
-            return [](const void* lhs, const void* rhs) { return (*reinterpret_cast<const T*>(lhs)) > (*reinterpret_cast<const T*>(rhs)); };
+            return +[](const void* lhs, const void* rhs) { return (*reinterpret_cast<const T*>(lhs)) > (*reinterpret_cast<const T*>(rhs)); };
         }
         else
         {
